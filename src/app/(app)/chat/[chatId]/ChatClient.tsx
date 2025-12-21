@@ -168,8 +168,8 @@ export function ChatClient() {
 
   if (chat === undefined || dbMessages === undefined) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+      <div className="absolute inset-0 flex items-center justify-center bg-background">
+        <Loader2 className="w-6 h-6 text-primary animate-spin" />
       </div>
     );
   }

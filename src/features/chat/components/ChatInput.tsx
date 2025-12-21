@@ -43,7 +43,14 @@ export function ChatInput({
   onModelChange,
 }: ChatInputProps) {
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleSubmit = () => {
+    if (!inputValue.trim()) return;
+    onSend(inputValue);
+    setInputValue("");
+  };
 
   // Group models by provider for the selector
   const groupedModels = AVAILABLE_MODELS.reduce((acc, m) => {
@@ -59,15 +66,11 @@ export function ChatInput({
       <div className="max-w-3xl mx-auto">
         <PromptInputProvider>
           <PromptInput
-            onSubmit={(msg) => onSend(msg.text)}
+            onSubmit={handleSubmit}
             isLoading={isLoading}
             disabled={disabled}
-            value={""} // Controlled by parent via onSend for reset, but here we just submit. PromptInput manages internal if not passed? 
-            // Wait, ChatClient passes nothing for value control here in the new pattern?
-            // Actually, ChatInput previously managed value state.
-            // Let's let ChatInput manage it if we want, or PromptInput.
-            // But PromptInput example uses controlled state.
-            // Let's implement controlled state in ChatInput.
+            value={inputValue}
+            onValueChange={setInputValue}
           >
             <PromptInputBody>
               <PromptInputTextarea ref={textareaRef} />

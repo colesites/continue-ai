@@ -31,7 +31,7 @@ export function ImportForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCaptureOpen, setIsCaptureOpen] = useState(false);
   const [captureUrl, setCaptureUrl] = useState<string>("");
-
+  const [autoStartCapture, setAutoStartCapture] = useState(false);
   const {
     status,
     url,
@@ -50,6 +50,18 @@ export function ImportForm() {
   const createChat = useMutation(api.chats.createChat);
   const addMessage = useMutation(api.messages.addMessage);
 
+  const openLinkInNewTab = (href: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      const newTab = window.open(href, "_blank", "noopener,noreferrer");
+      if (!newTab) {
+        console.warn("Popup blocked: enable pop-ups to auto-open link.");
+      }
+    } catch (err) {
+      console.warn("Failed to auto-open link", err);
+    }
+  };
+
   const handleUrlChange = (value: string, openCaptureOnPaste = false) => {
     setUrl(value);
     const detected = detectProvider(value);
@@ -64,8 +76,10 @@ export function ImportForm() {
       detected &&
       detected !== "unknown"
     ) {
-      setCaptureUrl(value.trim());
+      const trimmed = value.trim();
+      setCaptureUrl(trimmed);
       setIsCaptureOpen(true);
+      setAutoStartCapture(true);
     }
   };
 
@@ -143,7 +157,15 @@ export function ImportForm() {
       <CaptureModeModal
         isOpen={isCaptureOpen}
         url={captureUrl || url}
-        onClose={() => setIsCaptureOpen(false)}
+        autoStart={autoStartCapture}
+        onAutoStartComplete={() => setAutoStartCapture(false)}
+        onCaptureReady={(href) => {
+          openLinkInNewTab(href);
+        }}
+        onClose={() => {
+          setIsCaptureOpen(false);
+          setAutoStartCapture(false);
+        }}
         onCaptured={handleCapturedTranscript}
       />
       {/* Method Toggle */}

@@ -17,13 +17,19 @@ type CaptureStatus =
 export function CaptureModeModal({
   isOpen,
   url,
+  autoStart = false,
   onClose,
   onCaptured,
+  onAutoStartComplete,
+  onCaptureReady,
 }: {
   isOpen: boolean;
   url: string;
+  autoStart?: boolean;
   onClose: () => void;
   onCaptured: (transcript: NormalizedTranscript) => void;
+  onAutoStartComplete?: () => void;
+  onCaptureReady?: (href: string) => void;
 }) {
   const [status, setStatus] = React.useState<CaptureStatus>("idle");
   const [error, setError] = React.useState<string | null>(null);
@@ -35,6 +41,7 @@ export function CaptureModeModal({
   const intervalRef = React.useRef<number | null>(null);
   const framesLenRef = React.useRef<number>(0);
   const framesRef = React.useRef<string[]>([]);
+  const notifiedCaptureRef = React.useRef<boolean>(false);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -44,6 +51,7 @@ export function CaptureModeModal({
     setFrames([]);
     framesLenRef.current = 0;
     framesRef.current = [];
+    notifiedCaptureRef.current = false;
   }, [isOpen, url]);
 
   const stopTracks = React.useCallback(() => {
@@ -68,7 +76,37 @@ export function CaptureModeModal({
     };
   }, [clearIntervalSafe, stopTracks]);
 
-  const handleStartCapture = async () => {
+  const handleProcess = React.useCallback(async () => {
+    const framesToSend = framesRef.current;
+    if (!framesToSend.length) return;
+    if (status === "uploading") return;
+    setStatus("uploading");
+    setError(null);
+
+    try {
+      const res = await fetch("/api/import/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url,
+          frames: framesToSend,
+          // Default to a strong vision model via AI Gateway.
+          model: "openai/gpt-4o",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Capture OCR failed");
+
+      onCaptured(data.transcript as NormalizedTranscript);
+      setStatus("done");
+    } catch (e) {
+      setStatus("error");
+      setError(e instanceof Error ? e.message : "Capture OCR failed");
+    }
+  }, [onCaptured, status, url]);
+
+  const handleStartCapture = React.useCallback(async () => {
     setError(null);
     setStatus("capturing");
     setFrames([]);
@@ -87,6 +125,10 @@ export function CaptureModeModal({
       });
 
       streamRef.current = stream;
+      if (!notifiedCaptureRef.current) {
+        notifiedCaptureRef.current = true;
+        onCaptureReady?.(url);
+      }
 
       // If user stops sharing via browser UI, reflect it.
       const [videoTrack] = stream.getVideoTracks();
@@ -150,7 +192,19 @@ export function CaptureModeModal({
           : "Capture failed. Please allow screen recording."
       );
     }
-  };
+  }, [clearIntervalSafe, handleProcess, onCaptureReady, stopTracks, url]);
+
+  // Attempt to auto-start capture when the modal opens from a paste action.
+  React.useEffect(() => {
+    if (!isOpen || !autoStart) return;
+    if (status !== "idle") return;
+    const timer = window.setTimeout(() => {
+      Promise.resolve(handleStartCapture()).finally(() =>
+        onAutoStartComplete?.()
+      );
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, autoStart, status, onAutoStartComplete, handleStartCapture]);
 
   const handleStopCapture = () => {
     clearIntervalSafe();
@@ -162,41 +216,14 @@ export function CaptureModeModal({
     }
   };
 
-  const handleProcess = async () => {
-    const framesToSend = framesRef.current;
-    if (!framesToSend.length) return;
-    if (status === "uploading") return;
-    setStatus("uploading");
-    setError(null);
-
-    try {
-      const res = await fetch("/api/import/capture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url,
-          frames: framesToSend,
-          // Default to a strong vision model via AI Gateway.
-          model: "openai/gpt-4o",
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Capture OCR failed");
-
-      onCaptured(data.transcript as NormalizedTranscript);
-      setStatus("done");
-    } catch (e) {
-      setStatus("error");
-      setError(e instanceof Error ? e.message : "Capture OCR failed");
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       <div className="relative w-full max-w-xl rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl overflow-hidden">
         <div className="h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500" />
@@ -211,25 +238,20 @@ export function CaptureModeModal({
           </button>
 
           <h2 className="text-xl font-bold text-white">Capture Mode</h2>
-          <p className="mt-1 text-sm text-zinc-400">
-            Follow these steps (takes ~15 seconds):
-          </p>
+          <p className="mt-1 text-sm text-zinc-400">Quick steps (about 15s):</p>
 
           <ol className="mt-3 space-y-2 text-sm text-zinc-300 list-decimal pl-5">
             <li>
-              Click <span className="font-semibold text-white">Open link</span> (new tab)
+              Allow screen recording when prompted (we auto-start capture).
             </li>
             <li>
-              Come back here → click <span className="font-semibold text-white">Start capture</span>
+              We’ll open the shared link in a new tab after capture starts.
             </li>
+            <li>Switch to the shared tab and scroll from top to bottom.</li>
             <li>
-              In the browser picker, select the <span className="font-semibold text-white">share tab</span>
-            </li>
-            <li>
-              Scroll from the top → bottom, then click <span className="font-semibold text-white">Stop capture</span>
-            </li>
-            <li>
-              Click <span className="font-semibold text-white">OCR &amp; Import</span>
+              Return here and click{" "}
+              <span className="font-semibold text-white">Stop capture</span>{" "}
+              (auto OCR &amp; import).
             </li>
           </ol>
 
@@ -247,10 +269,12 @@ export function CaptureModeModal({
 
           <div className="mt-4 space-y-2 text-sm text-zinc-300">
             <p className="text-zinc-400 text-xs">
-              If frames stay at 0, you likely selected the wrong window/tab in the picker.
+              If frames stay at 0, you likely selected the wrong window/tab in
+              the picker.
             </p>
             <p className="text-zinc-500 text-xs">
-              Frames captured: <span className="text-zinc-300">{frameCount}</span>
+              Frames captured:{" "}
+              <span className="text-zinc-300">{frameCount}</span>
             </p>
           </div>
 
@@ -277,13 +301,13 @@ export function CaptureModeModal({
                 onClick={handleStopCapture}
                 className="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold bg-zinc-800 hover:bg-zinc-700 text-white transition-colors"
               >
-              Stop &amp; import
+                Stop &amp; import
               </button>
             )}
 
             <button
               onClick={handleProcess}
-            disabled={!frames.length || status === "uploading"}
+              disabled={!frames.length || status === "uploading"}
               className={cn(
                 "inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold transition-colors",
                 frames.length && status !== "uploading"
@@ -299,19 +323,18 @@ export function CaptureModeModal({
               ) : (
                 <>
                   <ScanText size={18} />
-                OCR &amp; Import
+                  OCR &amp; Import
                 </>
               )}
             </button>
           </div>
 
           <p className="mt-3 text-[11px] text-zinc-500">
-            Note: capture requires permission and won’t start automatically without a click.
+            Note: capture requires permission and won’t start automatically
+            without a click.
           </p>
         </div>
       </div>
     </div>
   );
 }
-
-
