@@ -13,7 +13,7 @@ interface PromptInputContextValue {
   isLoading: boolean;
   disabled: boolean;
   onSubmit: () => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const PromptInputContext = React.createContext<PromptInputContextValue | undefined>(
@@ -43,7 +43,7 @@ export function PromptInputProvider({ children }: { children: React.ReactNode })
         isLoading: false,
         disabled: false,
         onSubmit: () => {},
-        fileInputRef: React.createRef(),
+        fileInputRef: React.createRef<HTMLInputElement>(),
       }}
     >
       {children}
