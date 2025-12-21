@@ -11,7 +11,6 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { ChatMessage } from "@/features/chat/components/ChatMessage";
 import { ChatInput } from "@/features/chat/components/ChatInput";
-import { ModelSelect } from "@/features/chat/components/ModelSelect";
 import { ImportedContext } from "@/features/chat/components/ImportedContext";
 import { getDefaultModel } from "@/lib/models";
 
@@ -134,30 +133,38 @@ export function ChatClient() {
 
   // Persist assistant messages when streaming completes
   useEffect(() => {
-    if (status === "ready" && aiMessages.length > 0) {
-      const lastMessage = aiMessages[aiMessages.length - 1];
-      if (lastMessage.role === "assistant") {
-        if (lastSavedAssistantIdRef.current === lastMessage.id) return;
-        const content = lastMessage.parts
-          .filter(
-            (part): part is { type: "text"; text: string } =>
-              part.type === "text"
-          )
-          .map((part) => part.text)
-          .join("");
+    if (status !== "ready" || aiMessages.length === 0) return;
 
-        if (content) {
-          lastSavedAssistantIdRef.current = lastMessage.id;
-          addMessage({
-            chatId,
-            role: "assistant",
-            content,
-            model: selectedModel,
-          });
-        }
-      }
+    const lastMessage = aiMessages[aiMessages.length - 1];
+    if (lastMessage.role !== "assistant") return;
+
+    // If the assistant message already exists in Convex (e.g., when reloading),
+    // don't save it again—just mark it as seen.
+    const alreadyInDb = dbMessages?.some((m) => m._id === lastMessage.id);
+    if (alreadyInDb) {
+      lastSavedAssistantIdRef.current = lastMessage.id;
+      return;
     }
-  }, [status, aiMessages, chatId, addMessage, selectedModel]);
+
+    if (lastSavedAssistantIdRef.current === lastMessage.id) return;
+
+    const content = lastMessage.parts
+      .filter(
+        (part): part is { type: "text"; text: string } => part.type === "text"
+      )
+      .map((part) => part.text)
+      .join("");
+
+    if (content) {
+      lastSavedAssistantIdRef.current = lastMessage.id;
+      addMessage({
+        chatId,
+        role: "assistant",
+        content,
+        model: selectedModel,
+      });
+    }
+  }, [status, aiMessages, dbMessages, chatId, addMessage, selectedModel]);
 
   if (chat === undefined || dbMessages === undefined) {
     return (
@@ -202,7 +209,6 @@ export function ChatClient() {
             {chat.title}
           </h1>
         </div>
-        <ModelSelect value={selectedModel} onChange={setSelectedModel} />
       </header>
 
       {/* Imported context banner */}
@@ -283,6 +289,8 @@ export function ChatClient() {
         onSend={handleSend}
         isLoading={isLoading}
         disabled={!!chatError}
+        model={selectedModel}
+        onModelChange={setSelectedModel}
       />
     </div>
   );

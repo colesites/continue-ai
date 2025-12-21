@@ -20,10 +20,10 @@ export const viewport: Viewport = {
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c]">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-        <p className="text-zinc-400">Loading...</p>
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     </div>
   );
@@ -36,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="antialiased">
+      <body className="antialiased bg-background text-foreground">
         <Suspense fallback={<LoadingFallback />}>
           <Providers>{children}</Providers>
         </Suspense>

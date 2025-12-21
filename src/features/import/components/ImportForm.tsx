@@ -147,7 +147,7 @@ export function ImportForm() {
         onCaptured={handleCapturedTranscript}
       />
       {/* Method Toggle */}
-      <div className="flex gap-2 p-1 bg-zinc-900 rounded-lg">
+      <div className="flex gap-2 p-1 bg-muted rounded-lg">
         <button
           onClick={() => {
             setMethod("manual");
@@ -156,8 +156,8 @@ export function ImportForm() {
           className={cn(
             "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all",
             method === "manual"
-              ? "bg-indigo-600 text-white"
-              : "text-zinc-400 hover:text-white"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           <FileText size={16} className="inline mr-2" />
@@ -171,8 +171,8 @@ export function ImportForm() {
           className={cn(
             "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all",
             method === "capture"
-              ? "bg-indigo-600 text-white"
-              : "text-zinc-400 hover:text-white"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           <Link2 size={16} className="inline mr-2" />
@@ -184,7 +184,7 @@ export function ImportForm() {
       {method === "manual" && (
         <div className="space-y-4">
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
               <Link2 size={18} />
             </div>
             <input
@@ -194,10 +194,10 @@ export function ImportForm() {
               placeholder="Paste shared link (optional)"
               disabled={isImporting}
               className={cn(
-                "w-full pl-11 pr-4 py-3 rounded-xl bg-zinc-900 border text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all",
+                "w-full pl-11 pr-4 py-3 rounded-xl bg-background border text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
                 provider && provider !== "unknown"
-                  ? "border-indigo-500/50"
-                  : "border-zinc-800"
+                  ? "border-primary/50"
+                  : "border-input"
               )}
             />
             {provider && provider !== "unknown" && (
@@ -214,8 +214,8 @@ export function ImportForm() {
           </div>
 
           {url.trim() && (
-            <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3">
-              <p className="text-xs text-zinc-400">
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
+              <p className="text-xs text-muted-foreground">
                 If copying is hard, open the share link in a new tab and copy
                 the chat.
               </p>
@@ -223,7 +223,7 @@ export function ImportForm() {
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-xs font-medium text-indigo-300 hover:text-indigo-200"
+                className="inline-flex items-center gap-2 text-xs font-medium text-primary hover:text-primary/80"
               >
                 Open link <ExternalLink size={14} />
               </a>
@@ -231,7 +231,7 @@ export function ImportForm() {
           )}
 
           <div className="space-y-2">
-            <label className="text-sm text-zinc-400 flex items-center gap-2">
+            <label className="text-sm text-muted-foreground flex items-center gap-2">
               <Copy size={14} />
               Paste the conversation
             </label>
@@ -247,12 +247,12 @@ Assistant: The AI response here
 Or just paste the raw text - we'll figure it out!`}
               rows={8}
               disabled={isImporting}
-              className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
+              className="w-full px-4 py-3 rounded-xl bg-background border border-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none text-sm"
             />
           </div>
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
               {error}
             </div>
           )}
@@ -263,8 +263,8 @@ Or just paste the raw text - we'll figure it out!`}
             className={cn(
               "w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold transition-all",
               manualTranscript.trim() && !isImporting
-                ? "bg-indigo-600 hover:bg-indigo-500 text-white"
-                : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                : "bg-muted text-muted-foreground cursor-not-allowed"
             )}
           >
             {isImporting ? (
@@ -285,8 +285,8 @@ Or just paste the raw text - we'll figure it out!`}
       {/* Capture Mode */}
       {method === "capture" && (
         <div className="space-y-4">
-          <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/30">
-            <p className="text-xs text-indigo-200">
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
+            <p className="text-xs text-primary">
               Paste a share link and we’ll guide you through a quick
               screen-capture → OCR import. (This works even when providers block
               scraping.)
@@ -294,7 +294,7 @@ Or just paste the raw text - we'll figure it out!`}
           </div>
 
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
               <Link2 size={20} />
             </div>
             <input
@@ -308,10 +308,10 @@ Or just paste the raw text - we'll figure it out!`}
               placeholder="Paste a shared chat link (Gemini / ChatGPT / Claude)..."
               disabled={isImporting}
               className={cn(
-                "w-full pl-12 pr-4 py-4 rounded-xl bg-zinc-900 border text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all",
+                "w-full pl-12 pr-4 py-4 rounded-xl bg-background border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
                 provider && provider !== "unknown"
-                  ? "border-indigo-500/50"
-                  : "border-zinc-800"
+                  ? "border-primary/50"
+                  : "border-input"
               )}
             />
             {provider && provider !== "unknown" && (
@@ -328,8 +328,8 @@ Or just paste the raw text - we'll figure it out!`}
           </div>
 
           {url.trim() && (
-            <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3">
-              <p className="text-xs text-zinc-400">
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
+              <p className="text-xs text-muted-foreground">
                 Paste → Capture. We’ll open the link in a new tab and record
                 while you scroll.
               </p>
@@ -337,7 +337,7 @@ Or just paste the raw text - we'll figure it out!`}
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-xs font-medium text-indigo-300 hover:text-indigo-200"
+                className="inline-flex items-center gap-2 text-xs font-medium text-primary hover:text-primary/80"
               >
                 Open link <ExternalLink size={14} />
               </a>
@@ -345,7 +345,7 @@ Or just paste the raw text - we'll figure it out!`}
           )}
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
               {error}
             </div>
           )}
@@ -362,8 +362,8 @@ Or just paste the raw text - we'll figure it out!`}
             className={cn(
               "w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold transition-all",
               url.trim() && provider && provider !== "unknown" && !isImporting
-                ? "bg-indigo-600 hover:bg-indigo-500 text-white"
-                : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                : "bg-muted text-muted-foreground cursor-not-allowed"
             )}
           >
             <Video size={18} />

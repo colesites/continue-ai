@@ -9,60 +9,82 @@ import {
   MessageCircle,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/utils/cn";
 import { api } from "../../../../convex/_generated/api";
 import type { Provider } from "@/utils/url-safety";
 
-export function Sidebar() {
+interface SidebarProps {
+  className?: string;
+  isMobile?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ className, isMobile, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const chats = useQuery(api.chats.getUserChats);
 
+  // Force expanded state on mobile
+  const isCollapsed = isMobile ? false : collapsed;
+
   return (
     <aside
       className={cn(
-        "h-screen flex flex-col border-r border-zinc-800 bg-zinc-950/80 backdrop-blur transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        "h-full flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
+        isMobile ? "w-full" : isCollapsed ? "w-16" : "w-64",
+        className
       )}
     >
       {/* Header */}
-      <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-        {!collapsed && (
+      <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
+        {!isCollapsed && (
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">CA</span>
+            <div className="w-8 h-8 rounded-lg bg-sidebar-accent border border-sidebar-border flex items-center justify-center">
+              <span className="text-sidebar-accent-foreground font-semibold text-sm">CA</span>
             </div>
-            <span className="font-semibold text-white">Continue AI</span>
+            <span className="font-semibold text-sidebar-foreground">Continue AI</span>
           </Link>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-lg hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors"
-        >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
+        
+        {isMobile ? (
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-accent-foreground transition-colors"
+          >
+            <X size={18} />
+          </button>
+        ) : (
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-accent-foreground transition-colors"
+          >
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        )}
       </div>
 
       {/* New Chat Button */}
       <div className="p-3">
         <Link
           href="/"
+          onClick={isMobile ? onClose : undefined}
           className={cn(
-            "flex items-center gap-2 px-3 py-2.5 rounded-lg bg-zinc-900 text-white border border-zinc-800 hover:bg-zinc-800 font-medium transition-colors",
-            collapsed && "justify-center px-2"
+            "flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary text-primary-foreground border border-primary/20 hover:bg-primary/90 font-medium transition-colors",
+            isCollapsed && "justify-center px-2"
           )}
         >
           <MessageSquarePlus size={18} />
-          {!collapsed && <span>New</span>}
+          {!isCollapsed && <span>New</span>}
         </Link>
       </div>
 
       {/* Chat History */}
-      <div className="flex-1 overflow-y-auto px-3 py-2">
-        {!collapsed && (
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider px-3 mb-2">
+      <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin scrollbar-thumb-sidebar-border scrollbar-track-transparent">
+        {!isCollapsed && (
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
             Recent Chats
           </p>
         )}
@@ -73,12 +95,13 @@ export function Sidebar() {
               <Link
                 key={chat._id}
                 href={`/chat/${chat._id}`}
+                onClick={isMobile ? onClose : undefined}
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
                   isActive
-                    ? "bg-zinc-900 text-white border border-zinc-800"
-                    : "text-zinc-400 hover:bg-zinc-900 hover:text-white",
-                  collapsed && "justify-center px-2"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground border border-sidebar-border"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  isCollapsed && "justify-center px-2"
                 )}
               >
                 <MessageCircle
@@ -89,14 +112,14 @@ export function Sidebar() {
                       : getProviderColor(chat.source.provider as Provider),
                   }}
                 />
-                {!collapsed && (
+                {!isCollapsed && (
                   <span className="truncate">{chat.title}</span>
                 )}
               </Link>
             );
           })}
-          {chats?.length === 0 && !collapsed && (
-            <p className="text-xs text-zinc-600 px-3 py-4 text-center">
+          {chats?.length === 0 && !isCollapsed && (
+            <p className="text-xs text-muted-foreground px-3 py-4 text-center">
               No chats yet. Import a conversation to get started.
             </p>
           )}
@@ -104,11 +127,11 @@ export function Sidebar() {
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-zinc-800">
+      <div className="p-3 border-t border-sidebar-border">
         <div
           className={cn(
             "flex items-center gap-3",
-            collapsed && "justify-center"
+            isCollapsed && "justify-center"
           )}
         >
           <UserButton

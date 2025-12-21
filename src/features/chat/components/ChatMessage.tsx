@@ -38,20 +38,17 @@ export function ChatMessage({
             "rounded-2xl border px-4 py-3",
             "shadow-sm shadow-black/20",
             isUser
-              ? "bg-indigo-500/10 border-indigo-500/20"
-              : "bg-zinc-900/40 border-zinc-800"
+              ? "bg-primary/10 border-primary/20"
+              : "bg-muted border-border"
           )}
         >
           <div
             className={cn(
-              "prose prose-invert prose-sm max-w-none",
-              "prose-p:text-zinc-200 prose-p:leading-relaxed",
-              "prose-code:text-indigo-200 prose-code:bg-zinc-800/70 prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
-              "prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800",
-              "prose-headings:text-white",
-              "prose-strong:text-white",
-              "prose-ul:text-zinc-200 prose-ol:text-zinc-200",
-              "prose-a:text-indigo-300 prose-a:no-underline hover:prose-a:underline"
+              "prose prose-sm max-w-none dark:prose-invert",
+              "prose-p:leading-relaxed",
+              "prose-code:text-primary prose-code:bg-muted/70 prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
+              "prose-pre:bg-background prose-pre:border prose-pre:border-border",
+              "prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
             )}
           >
             <MessageContent content={content} isStreaming={isStreaming} />
@@ -62,7 +59,7 @@ export function ChatMessage({
         {!isStreaming && (
           <div
             className={cn(
-              "mt-2 flex items-center gap-2 text-xs text-zinc-500 transition-opacity",
+              "mt-2 flex items-center gap-2 text-xs text-muted-foreground transition-opacity",
               // Keep it subtle by default; brighten on hover
               "opacity-60 group-hover:opacity-100",
               isUser && "justify-end"
@@ -70,7 +67,7 @@ export function ChatMessage({
           >
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 hover:bg-zinc-900 hover:text-zinc-200 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 hover:bg-muted hover:text-foreground transition-colors"
             >
               {copied ? (
                 <>
@@ -85,7 +82,7 @@ export function ChatMessage({
               )}
             </button>
             {isImported && (
-              <span className="text-[11px] px-2 py-1 rounded-md bg-zinc-900/50 border border-zinc-800 text-zinc-400">
+              <span className="text-[11px] px-2 py-1 rounded-md bg-muted/50 border border-border text-muted-foreground">
                 Imported
               </span>
             )}
@@ -116,7 +113,7 @@ function MessageContent({
               <p key={j} className="mb-2 last:mb-0 wrap-break-word whitespace-pre-wrap">
                 {line}
                 {isStreaming && i === paragraphs.length - 1 && j === lines.length - 1 && (
-                  <span className="inline-block w-2 h-4 ml-1 bg-indigo-500 animate-pulse" />
+                  <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse" />
                 )}
               </p>
             ))}

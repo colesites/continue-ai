@@ -31,17 +31,17 @@ export function ImportedContext({
   });
 
   return (
-    <div className="border-b border-zinc-800 bg-zinc-950/50 backdrop-blur">
+    <div className="border-b border-border bg-background/50 backdrop-blur">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-zinc-900/40 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-muted/40 transition-colors"
       >
         <div className="flex items-center gap-3">
           <div
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: getProviderColor(providerTyped) }}
           />
-          <span className="text-zinc-400">
+          <span className="text-muted-foreground">
             Continued from{" "}
             <span
               className="font-medium"
@@ -50,21 +50,21 @@ export function ImportedContext({
               {getProviderDisplayName(providerTyped)}
             </span>
           </span>
-          <span className="text-zinc-600">•</span>
-          <span className="text-zinc-500">{messageCount} imported messages</span>
+          <span className="text-muted-foreground">•</span>
+          <span className="text-muted-foreground">{messageCount} imported messages</span>
         </div>
         <ChevronDown
           size={16}
           className={cn(
-            "text-zinc-500 transition-transform",
+            "text-muted-foreground transition-transform",
             isExpanded && "rotate-180"
           )}
         />
       </button>
 
       {isExpanded && (
-        <div className="px-4 py-3 border-t border-zinc-800 space-y-2">
-          <div className="flex items-center gap-2 text-sm text-zinc-400">
+        <div className="px-4 py-3 border-t border-border space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock size={14} />
             <span>Imported {formattedDate}</span>
           </div>
@@ -73,7 +73,7 @@ export function ImportedContext({
               href={sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+              className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
             >
               <ExternalLink size={14} />
               <span className="truncate">{sourceUrl}</span>
