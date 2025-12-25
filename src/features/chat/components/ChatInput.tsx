@@ -94,28 +94,26 @@ export function ChatInput({
                   <ModelSelectorInput placeholder="Search models..." />
                   <ModelSelectorList>
                     <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
-                    {Object.entries(groupedModels).map(
-                      ([provider, models]) => (
-                        <ModelSelectorGroup heading={provider} key={provider}>
-                          {models.map((m) => (
-                            <ModelSelectorItem
-                              key={m.id}
-                              onSelect={() => {
-                                onModelChange(m.id);
-                                setModelSelectorOpen(false);
-                              }}
-                              value={m.name}
-                            >
-                              <ModelSelectorLogo provider={m.provider} />
-                              <ModelSelectorName>{m.name}</ModelSelectorName>
-                              {model === m.id && (
-                                <CheckIcon className="ml-auto size-4" />
-                              )}
-                            </ModelSelectorItem>
-                          ))}
-                        </ModelSelectorGroup>
-                      )
-                    )}
+                    {Object.entries(groupedModels).map(([provider, models]) => (
+                      <ModelSelectorGroup heading={provider} key={provider}>
+                        {models.map((m) => (
+                          <ModelSelectorItem
+                            key={m.id}
+                            onSelect={() => {
+                              onModelChange(m.id);
+                              setModelSelectorOpen(false);
+                            }}
+                            value={m.name}
+                          >
+                            <ModelSelectorLogo provider={m.provider} />
+                            <ModelSelectorName>{m.name}</ModelSelectorName>
+                            {model === m.id && (
+                              <CheckIcon className="ml-auto size-4" />
+                            )}
+                          </ModelSelectorItem>
+                        ))}
+                      </ModelSelectorGroup>
+                    ))}
                   </ModelSelectorList>
                 </ModelSelectorContent>
               </ModelSelector>

@@ -12,6 +12,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { ChatMessage } from "@/features/chat/components/ChatMessage";
 import { ChatInput } from "@/features/chat/components/ChatInput";
 import { getDefaultModel } from "@/lib/models";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export function ChatClient() {
   const params = useParams();
@@ -25,6 +26,7 @@ export function ChatClient() {
   const chat = useQuery(api.chats.getChat, { chatId });
   const dbMessages = useQuery(api.messages.getMessages, { chatId });
   const addMessage = useMutation(api.messages.addMessage);
+  const { state: sidebarState, isMobile: isSidebarMobile } = useSidebar();
 
   // Create transport with model
   const transport = useMemo(
@@ -191,7 +193,7 @@ export function ChatClient() {
   return (
     <div className="relative flex min-h-full flex-col bg-zinc-950">
       <div className="flex-1">
-        <div className="mx-auto w-full max-w-3xl px-4 pb-64">
+        <div className="mx-auto w-full max-w-3xl px-4 pb-50">
           {!!chatError && (
             <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-200">
               <div className="flex items-start gap-3">
@@ -251,7 +253,20 @@ export function ChatClient() {
         </div>
       </div>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-6">
+      <div
+        data-sidebar-state={sidebarState}
+        className="pointer-events-none fixed bottom-0 z-40 px-4 pb-6 transition-[left,width] duration-300"
+        style={{
+          left:
+            !isSidebarMobile && sidebarState === "expanded"
+              ? "var(--sidebar-width)"
+              : 0,
+          width:
+            !isSidebarMobile && sidebarState === "expanded"
+              ? "calc(100vw - var(--sidebar-width))"
+              : "100vw",
+        }}
+      >
         <div className="pointer-events-auto mx-auto w-full max-w-3xl">
           <ChatInput
             onSend={handleSend}

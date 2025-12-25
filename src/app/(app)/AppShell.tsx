@@ -88,11 +88,11 @@ function ShellLayout({ children }: { children: ReactNode }) {
       <AppSidebar />
       <SidebarInset className="bg-zinc-950">
         <div className="flex min-h-screen flex-col">
-          <header className="sticky top-4 z-40 px-4 pointer-events-none">
+          <header className="sticky top-2 z-40 pl-2 pointer-events-none">
             <div className="flex h-12 items-center">
               <div
                 className={cn(
-                  "pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/10 bg-black/60 px-3 py-2 text-white shadow-lg backdrop-blur",
+                  "pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/10 bg-black/60 p-1 text-white shadow-lg backdrop-blur",
                   hideTriggerGroup && "pointer-events-none opacity-0 scale-95"
                 )}
                 aria-hidden={hideTriggerGroup}

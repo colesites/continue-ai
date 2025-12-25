@@ -24,7 +24,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -56,13 +55,12 @@ export function Sidebar() {
           <div className="flex items-center gap-3">
             <SidebarTrigger
               aria-label="Close sidebar"
-              className="h-9 w-9 border border-sidebar-border/60 text-sidebar-foreground/80 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+              className="h-8 w-8 border border-sidebar-border/60 text-sidebar-foreground/80 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
             />
             <div>
               <p className="text-base font-semibold tracking-tight">
                 Continue AI
               </p>
-              <p className="text-xs text-sidebar-foreground/60">Workspace</p>
             </div>
           </div>
           <Link
@@ -139,8 +137,6 @@ export function Sidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarSeparator className="border-sidebar-border/60" />
-
       <SidebarFooter className="border-t border-sidebar-border/60 p-4">
         <div className="flex items-center gap-3">
           <UserButton
@@ -154,7 +150,6 @@ export function Sidebar() {
             <p className="truncate text-sm font-medium leading-tight">
               {displayName || "Logged in"}
             </p>
-            <p className="text-xs text-sidebar-foreground/60">Workspace</p>
           </div>
         </div>
       </SidebarFooter>
