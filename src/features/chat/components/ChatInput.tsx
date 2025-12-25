@@ -58,78 +58,76 @@ export function ChatInput({
   const selectedModelData = AVAILABLE_MODELS.find((m) => m.id === model);
 
   return (
-    <div className="border-t border-border bg-background/80 backdrop-blur p-4">
-      <div className="max-w-3xl mx-auto">
-        <PromptInputProvider>
-          <PromptInput
-            onSubmit={handleSubmit}
-            isLoading={isLoading}
-            disabled={disabled}
-            value={inputValue}
-            onValueChange={setInputValue}
-          >
-            <PromptInputBody>
-              <PromptInputTextarea ref={textareaRef} />
-            </PromptInputBody>
-            <PromptInputFooter>
-              <PromptInputTools>
-                <ModelSelector
-                  open={modelSelectorOpen}
-                  onOpenChange={setModelSelectorOpen}
-                >
-                  <ModelSelectorTrigger asChild>
-                    <PromptInputButton>
-                      {selectedModelData && (
+    <div className="rounded-2xl border border-border/70 bg-background/85 p-4 shadow-lg supports-backdrop-filter:bg-background/70 backdrop-blur">
+      <PromptInputProvider>
+        <PromptInput
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          disabled={disabled}
+          value={inputValue}
+          onValueChange={setInputValue}
+        >
+          <PromptInputBody>
+            <PromptInputTextarea ref={textareaRef} />
+          </PromptInputBody>
+          <PromptInputFooter>
+            <PromptInputTools>
+              <ModelSelector
+                open={modelSelectorOpen}
+                onOpenChange={setModelSelectorOpen}
+              >
+                <ModelSelectorTrigger asChild>
+                  <PromptInputButton>
+                    {selectedModelData && (
+                      <>
                         <ModelSelectorLogo
                           provider={selectedModelData.provider}
                         />
-                      )}
-                      {selectedModelData && (
                         <ModelSelectorName>
                           {selectedModelData.name}
                         </ModelSelectorName>
-                      )}
-                    </PromptInputButton>
-                  </ModelSelectorTrigger>
-                  <ModelSelectorContent>
-                    <ModelSelectorInput placeholder="Search models..." />
-                    <ModelSelectorList>
-                      <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
-                      {Object.entries(groupedModels).map(
-                        ([provider, models]) => (
-                          <ModelSelectorGroup heading={provider} key={provider}>
-                            {models.map((m) => (
-                              <ModelSelectorItem
-                                key={m.id}
-                                onSelect={() => {
-                                  onModelChange(m.id);
-                                  setModelSelectorOpen(false);
-                                }}
-                                value={m.name}
-                              >
-                                <ModelSelectorLogo provider={m.provider} />
-                                <ModelSelectorName>{m.name}</ModelSelectorName>
-                                {model === m.id && (
-                                  <CheckIcon className="ml-auto size-4" />
-                                )}
-                              </ModelSelectorItem>
-                            ))}
-                          </ModelSelectorGroup>
-                        )
-                      )}
-                    </ModelSelectorList>
-                  </ModelSelectorContent>
-                </ModelSelector>
-              </PromptInputTools>
-              <PromptInputSubmit />
-            </PromptInputFooter>
-          </PromptInput>
-        </PromptInputProvider>
+                      </>
+                    )}
+                  </PromptInputButton>
+                </ModelSelectorTrigger>
+                <ModelSelectorContent>
+                  <ModelSelectorInput placeholder="Search models..." />
+                  <ModelSelectorList>
+                    <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+                    {Object.entries(groupedModels).map(
+                      ([provider, models]) => (
+                        <ModelSelectorGroup heading={provider} key={provider}>
+                          {models.map((m) => (
+                            <ModelSelectorItem
+                              key={m.id}
+                              onSelect={() => {
+                                onModelChange(m.id);
+                                setModelSelectorOpen(false);
+                              }}
+                              value={m.name}
+                            >
+                              <ModelSelectorLogo provider={m.provider} />
+                              <ModelSelectorName>{m.name}</ModelSelectorName>
+                              {model === m.id && (
+                                <CheckIcon className="ml-auto size-4" />
+                              )}
+                            </ModelSelectorItem>
+                          ))}
+                        </ModelSelectorGroup>
+                      )
+                    )}
+                  </ModelSelectorList>
+                </ModelSelectorContent>
+              </ModelSelector>
+            </PromptInputTools>
+            <PromptInputSubmit />
+          </PromptInputFooter>
+        </PromptInput>
+      </PromptInputProvider>
 
-        <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Shift+Enter for new line</span>
-          <span>Verify important info</span>
-        </div>
+      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+        <span>Shift+Enter for new line</span>
+        <span>Verify important info</span>
       </div>
     </div>
   );

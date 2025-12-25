@@ -7,153 +7,158 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import {
   MessageSquarePlus,
   MessageCircle,
-  ChevronLeft,
-  ChevronRight,
-  X,
+  Search as SearchIcon,
 } from "lucide-react";
-import { useState } from "react";
 import { cn } from "@/utils/cn";
 import { api } from "../../convex/_generated/api";
 import type { Provider } from "@/utils/url-safety";
+import {
+  Sidebar as SidebarPrimitive,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
-interface SidebarProps {
-  className?: string;
-  isMobile?: boolean;
-  onClose?: () => void;
-}
-
-export function Sidebar({ className, isMobile, onClose }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export function Sidebar() {
   const pathname = usePathname();
   const chats = useQuery(api.chats.getUserChats);
   const { user } = useUser();
+  const sidebar = useSidebar();
+
   const displayName =
     user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? "";
 
-  // Force expanded state on mobile
-  const isCollapsed = isMobile ? false : collapsed;
+  const hasChats = (chats?.length ?? 0) > 0;
+
+  const handleNavigate = () => {
+    if (sidebar.isMobile) {
+      sidebar.setOpenMobile(false);
+    }
+  };
 
   return (
-    <aside
-      className={cn(
-        "h-full flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
-        isMobile ? "w-full" : isCollapsed ? "w-16" : "w-64",
-        className
-      )}
+    <SidebarPrimitive
+      collapsible="offcanvas"
+      className="border-r border-sidebar-border bg-sidebar/95 text-sidebar-foreground shadow-2xl"
     >
-      {/* Header */}
-      <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
-        {!isCollapsed && (
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-sidebar-accent border border-sidebar-border flex items-center justify-center">
-              <span className="text-sidebar-accent-foreground font-semibold text-sm">
-                CA
-              </span>
+      <SidebarHeader className="border-b border-sidebar-border/60 p-4 pb-5">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <SidebarTrigger
+              aria-label="Close sidebar"
+              className="h-9 w-9 border border-sidebar-border/60 text-sidebar-foreground/80 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+            />
+            <div>
+              <p className="text-base font-semibold tracking-tight">
+                Continue AI
+              </p>
+              <p className="text-xs text-sidebar-foreground/60">Workspace</p>
             </div>
-            <span className="font-semibold text-sidebar-foreground">
-              Continue AI
-            </span>
+          </div>
+          <Link
+            href="/"
+            onClick={handleNavigate}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+          >
+            <MessageSquarePlus size={18} />
+            <span>New Chat</span>
           </Link>
-        )}
-
-        {isMobile ? (
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-accent-foreground transition-colors"
-          >
-            <X size={18} />
-          </button>
-        ) : (
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-accent-foreground transition-colors"
-          >
-            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-        )}
-      </div>
-
-      {/* New Chat Button */}
-      <div className="p-3">
-        <Link
-          href="/"
-          onClick={isMobile ? onClose : undefined}
-          className={cn(
-            "flex items-center gap-2 px-3 py-2.5 rounded-lg bg-primary text-primary-foreground border border-primary/20 hover:bg-primary/90 font-medium transition-colors",
-            isCollapsed && "justify-center px-2"
-          )}
-        >
-          <MessageSquarePlus size={18} />
-          {!isCollapsed && <span>New</span>}
-        </Link>
-      </div>
-
-      {/* Chat History */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin scrollbar-thumb-sidebar-border scrollbar-track-transparent">
-        {!isCollapsed && (
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
-            Recent Chats
-          </p>
-        )}
-        <div className="space-y-1">
-          {chats?.map((chat) => {
-            const isActive = pathname === `/chat/${chat._id}`;
-            return (
-              <Link
-                key={chat._id}
-                href={`/chat/${chat._id}`}
-                onClick={isMobile ? onClose : undefined}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground border border-sidebar-border"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  isCollapsed && "justify-center px-2"
-                )}
-              >
-                <MessageCircle
-                  size={16}
-                  style={{
-                    color: isActive
-                      ? undefined
-                      : getProviderColor(chat.source.provider as Provider),
-                  }}
-                />
-                {!isCollapsed && <span className="truncate">{chat.title}</span>}
-              </Link>
-            );
-          })}
-          {chats?.length === 0 && !isCollapsed && (
-            <p className="text-xs text-muted-foreground px-3 py-4 text-center">
-              No chats yet. Import a conversation to get started.
-            </p>
-          )}
+          <div className="relative">
+            <SearchIcon
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-sidebar-foreground/60"
+            />
+            <SidebarInput
+              id="sidebar-thread-search"
+              placeholder="Search your threads..."
+              className="bg-sidebar-accent/30 pl-9 pr-3 text-sm text-sidebar-foreground placeholder:text-sidebar-foreground/50"
+            />
+          </div>
         </div>
-      </div>
+      </SidebarHeader>
 
-      {/* Footer */}
-      <div className="p-3 border-t border-sidebar-border">
-        <div
-          className={cn(
-            "flex items-center gap-3",
-            isCollapsed && "justify-center"
-          )}
-        >
+      <SidebarContent className="px-2 py-4">
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-[0.3em] text-sidebar-foreground/60">
+            Recent
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {chats?.map((chat) => {
+                const isActive = pathname === `/chat/${chat._id}`;
+                return (
+                  <SidebarMenuItem key={chat._id}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={chat.title}
+                      className={cn(
+                        "border border-transparent text-sm",
+                        "data-[active=true]:border-sidebar-border data-[active=true]:bg-sidebar-accent/40 data-[active=true]:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      <Link
+                        href={`/chat/${chat._id}`}
+                        onClick={handleNavigate}
+                        className="flex items-center gap-3"
+                      >
+                        <MessageCircle
+                          size={16}
+                          style={{
+                            color: isActive
+                              ? undefined
+                              : getProviderColor(
+                                  chat.source.provider as Provider
+                                ),
+                          }}
+                        />
+                        <span className="truncate">{chat.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+
+            {!hasChats && (
+              <p className="mt-4 rounded-xl border border-dashed border-sidebar-border/60 px-3 py-4 text-center text-xs text-sidebar-foreground/60">
+                No chats yet. Import a conversation to get started.
+              </p>
+            )}
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarSeparator className="border-sidebar-border/60" />
+
+      <SidebarFooter className="border-t border-sidebar-border/60 p-4">
+        <div className="flex items-center gap-3">
           <UserButton
             appearance={{
               elements: {
-                avatarBox: "w-8 h-8",
+                avatarBox: "w-9 h-9",
               },
             }}
           />
-          {!isCollapsed && displayName && (
-            <span className="text-sm font-medium text-sidebar-foreground truncate">
-              {displayName}
-            </span>
-          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium leading-tight">
+              {displayName || "Logged in"}
+            </p>
+            <p className="text-xs text-sidebar-foreground/60">Workspace</p>
+          </div>
         </div>
-      </div>
-    </aside>
+      </SidebarFooter>
+    </SidebarPrimitive>
   );
 }
 

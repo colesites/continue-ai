@@ -11,7 +11,6 @@ import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { ChatMessage } from "@/features/chat/components/ChatMessage";
 import { ChatInput } from "@/features/chat/components/ChatInput";
-import { ImportedContext } from "@/features/chat/components/ImportedContext";
 import { getDefaultModel } from "@/lib/models";
 
 export function ChatClient() {
@@ -189,43 +188,12 @@ export function ChatClient() {
     );
   }
 
-  // Count imported messages
-  const importedMessageCount = dbMessages.filter(
-    (m) => m.metadata?.isImported
-  ).length;
-
   return (
-    <div className="flex-1 flex flex-col h-screen bg-zinc-950">
-      {/* Header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft size={18} />
-          </Link>
-          <h1 className="font-semibold text-white truncate max-w-md">
-            {chat.title}
-          </h1>
-        </div>
-      </header>
-
-      {/* Imported context banner */}
-      {chat.source && (
-        <ImportedContext
-          provider={chat.source.provider}
-          sourceUrl={chat.source.sourceUrl}
-          importedAt={chat.source.importedAt}
-          messageCount={importedMessageCount}
-        />
-      )}
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 py-4">
+    <div className="relative flex min-h-full flex-col bg-zinc-950">
+      <div className="flex-1">
+        <div className="mx-auto w-full max-w-3xl px-4 pb-64">
           {!!chatError && (
-            <div className="mt-4 mb-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-200">
+            <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-200">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="mt-0.5 shrink-0" size={18} />
                 <div className="min-w-0">
@@ -235,11 +203,11 @@ export function ChatClient() {
                   </p>
                   <p className="mt-2 text-xs text-amber-200/70">
                     Set{" "}
-                    <code className="px-1 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                    <code className="rounded border border-amber-500/20 bg-amber-500/10 px-1 py-0.5">
                       AI_GATEWAY_API_KEY
                     </code>{" "}
                     (or{" "}
-                    <code className="px-1 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                    <code className="rounded border border-amber-500/20 bg-amber-500/10 px-1 py-0.5">
                       AI_GATEWAY_TOKEN
                     </code>
                     ) in your env and restart the dev server.
@@ -263,18 +231,17 @@ export function ChatClient() {
             />
           ))}
 
-          {/* Loading indicator for new response */}
           {status === "submitted" && (
-            <div className="flex gap-4 px-4 py-6 bg-zinc-900/30">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+            <div className="flex gap-4 px-4 py-6">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400">
                 <Loader2 size={16} className="animate-spin" />
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-zinc-400">Thinking</span>
                 <span className="flex gap-0.5">
-                  <span className="w-1 h-1 rounded-full bg-zinc-400 typing-dot" />
-                  <span className="w-1 h-1 rounded-full bg-zinc-400 typing-dot" />
-                  <span className="w-1 h-1 rounded-full bg-zinc-400 typing-dot" />
+                  <span className="typing-dot h-1 w-1 rounded-full bg-zinc-400" />
+                  <span className="typing-dot h-1 w-1 rounded-full bg-zinc-400" />
+                  <span className="typing-dot h-1 w-1 rounded-full bg-zinc-400" />
                 </span>
               </div>
             </div>
@@ -284,14 +251,17 @@ export function ChatClient() {
         </div>
       </div>
 
-      {/* Input */}
-      <ChatInput
-        onSend={handleSend}
-        isLoading={isLoading}
-        disabled={!!chatError}
-        model={selectedModel}
-        onModelChange={setSelectedModel}
-      />
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-6">
+        <div className="pointer-events-auto mx-auto w-full max-w-3xl">
+          <ChatInput
+            onSend={handleSend}
+            isLoading={isLoading}
+            disabled={!!chatError}
+            model={selectedModel}
+            onModelChange={setSelectedModel}
+          />
+        </div>
+      </div>
     </div>
   );
 }

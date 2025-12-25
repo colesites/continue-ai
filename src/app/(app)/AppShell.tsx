@@ -1,16 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
-import { useEffect, useState } from "react";
+import { Plus, Search } from "lucide-react";
+import { useEffect } from "react";
+import type { ReactNode } from "react";
 import { api } from "../../../convex/_generated/api";
-import { Sidebar } from "@/components/Sidebar";
-import { Menu } from "lucide-react";
+import { Sidebar as AppSidebar } from "@/components/Sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { cn } from "@/utils/cn";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser();
   const getOrCreateUser = useMutation(api.users.getOrCreateUser);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -25,9 +33,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -35,46 +43,85 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-background">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex shrink-0 h-full">
-        <Sidebar />
-      </div>
+    <SidebarProvider defaultOpen={false}>
+      <ShellLayout>{children}</ShellLayout>
+    </SidebarProvider>
+  );
+}
 
-      {/* Mobile Sidebar Overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
+function ShellLayout({ children }: { children: ReactNode }) {
+  const { isMobile, open, openMobile, setOpenMobile, setOpen } = useSidebar();
 
-          {/* Drawer */}
-          <div className="relative flex flex-col w-[85%] max-w-xs h-full bg-sidebar shadow-2xl animate-in slide-in-from-left duration-300">
-            <Sidebar isMobile onClose={() => setIsMobileMenuOpen(false)} />
-          </div>
+  const toolbarButtonClasses =
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/80 transition-colors hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40";
+
+  const focusSidebarSearch = () => {
+    const input = document.getElementById(
+      "sidebar-thread-search"
+    ) as HTMLInputElement | null;
+    if (!input) return;
+    input.focus();
+    const valueLength = input.value.length;
+    input.setSelectionRange(valueLength, valueLength);
+  };
+
+  const handleSearchClick = () => {
+    if (isMobile && !openMobile) {
+      setOpenMobile(true);
+      window.setTimeout(focusSidebarSearch, 220);
+    } else {
+      setOpen(true);
+      window.requestAnimationFrame(focusSidebarSearch);
+    }
+  };
+
+  const handleNewChatClick = () => {
+    if (isMobile && openMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  const hideTriggerGroup = open || openMobile;
+
+  return (
+    <>
+      <AppSidebar />
+      <SidebarInset className="bg-zinc-950">
+        <div className="flex min-h-screen flex-col">
+          <header className="sticky top-4 z-40 px-4 pointer-events-none">
+            <div className="flex h-12 items-center">
+              <div
+                className={cn(
+                  "pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/10 bg-black/60 px-3 py-2 text-white shadow-lg backdrop-blur",
+                  hideTriggerGroup && "pointer-events-none opacity-0 scale-95"
+                )}
+                aria-hidden={hideTriggerGroup}
+              >
+                <SidebarTrigger
+                  className={cn(toolbarButtonClasses, "border border-white/10")}
+                />
+                <button
+                  type="button"
+                  onClick={handleSearchClick}
+                  className={toolbarButtonClasses}
+                  aria-label="Search chats"
+                >
+                  <Search className="size-4" />
+                </button>
+                <Link
+                  href="/"
+                  className={toolbarButtonClasses}
+                  aria-label="Start new chat"
+                  onClick={handleNewChatClick}
+                >
+                  <Plus className="size-4" />
+                </Link>
+              </div>
+            </div>
+          </header>
+          <div className="flex-1 overflow-y-auto">{children}</div>
         </div>
-      )}
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Mobile Header */}
-        <div className="md:hidden w-full flex items-center p-4 border-b border-border bg-background/80 backdrop-blur shrink-0 z-40">
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 -ml-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Menu size={20} />
-          </button>
-          <span className="font-semibold ml-2 text-foreground">
-            Continue AI
-          </span>
-        </div>
-
-        {/* Scrollable Page Content */}
-        <div className="flex-1 overflow-y-auto relative">{children}</div>
-      </main>
-    </div>
+      </SidebarInset>
+    </>
   );
 }
