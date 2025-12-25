@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 import {
   MessageSquarePlus,
   MessageCircle,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/utils/cn";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "../../convex/_generated/api";
 import type { Provider } from "@/utils/url-safety";
 
 interface SidebarProps {
@@ -26,6 +26,9 @@ export function Sidebar({ className, isMobile, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const chats = useQuery(api.chats.getUserChats);
+  const { user } = useUser();
+  const displayName =
+    user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? "";
 
   // Force expanded state on mobile
   const isCollapsed = isMobile ? false : collapsed;
@@ -43,12 +46,16 @@ export function Sidebar({ className, isMobile, onClose }: SidebarProps) {
         {!isCollapsed && (
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-sidebar-accent border border-sidebar-border flex items-center justify-center">
-              <span className="text-sidebar-accent-foreground font-semibold text-sm">CA</span>
+              <span className="text-sidebar-accent-foreground font-semibold text-sm">
+                CA
+              </span>
             </div>
-            <span className="font-semibold text-sidebar-foreground">Continue AI</span>
+            <span className="font-semibold text-sidebar-foreground">
+              Continue AI
+            </span>
           </Link>
         )}
-        
+
         {isMobile ? (
           <button
             onClick={onClose}
@@ -112,9 +119,7 @@ export function Sidebar({ className, isMobile, onClose }: SidebarProps) {
                       : getProviderColor(chat.source.provider as Provider),
                   }}
                 />
-                {!isCollapsed && (
-                  <span className="truncate">{chat.title}</span>
-                )}
+                {!isCollapsed && <span className="truncate">{chat.title}</span>}
               </Link>
             );
           })}
@@ -141,6 +146,11 @@ export function Sidebar({ className, isMobile, onClose }: SidebarProps) {
               },
             }}
           />
+          {!isCollapsed && displayName && (
+            <span className="text-sm font-medium text-sidebar-foreground truncate">
+              {displayName}
+            </span>
+          )}
         </div>
       </div>
     </aside>
@@ -158,4 +168,3 @@ function getProviderColor(provider: Provider): string {
   };
   return colors[provider];
 }
-

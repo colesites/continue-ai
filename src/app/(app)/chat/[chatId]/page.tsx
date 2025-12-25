@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import { ChatClient } from "./ChatClient";
+import { ChatClient } from "@/features/chat/components/ChatClient";
 
 // Required for Cache Components - provide at least one param for validation
 export async function generateStaticParams() {

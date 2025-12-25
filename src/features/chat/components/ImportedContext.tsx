@@ -5,13 +5,7 @@ import { ChevronDown, ExternalLink, Clock } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { getProviderDisplayName, getProviderColor } from "@/utils/url-safety";
 import type { Provider } from "@/utils/url-safety";
-
-interface ImportedContextProps {
-  provider: string;
-  sourceUrl?: string;
-  importedAt: number;
-  messageCount: number;
-}
+import type { ImportedContextProps } from "@/features/chat/types";
 
 export function ImportedContext({
   provider,
@@ -51,7 +45,9 @@ export function ImportedContext({
             </span>
           </span>
           <span className="text-muted-foreground">•</span>
-          <span className="text-muted-foreground">{messageCount} imported messages</span>
+          <span className="text-muted-foreground">
+            {messageCount} imported messages
+          </span>
         </div>
         <ChevronDown
           size={16}
@@ -84,4 +80,3 @@ export function ImportedContext({
     </div>
   );
 }
-

@@ -26,14 +26,7 @@ import { Button } from "@/components/ui/button";
 import { CheckIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { AVAILABLE_MODELS } from "@/lib/models";
-
-interface ChatInputProps {
-  onSend: (message: string) => void;
-  isLoading?: boolean;
-  disabled?: boolean;
-  model: string;
-  onModelChange: (modelId: string) => void;
-}
+import type { ChatInputProps } from "@/features/chat/types";
 
 export function ChatInput({
   onSend,
@@ -53,11 +46,14 @@ export function ChatInput({
   };
 
   // Group models by provider for the selector
-  const groupedModels = AVAILABLE_MODELS.reduce((acc, m) => {
-    if (!acc[m.provider]) acc[m.provider] = [];
-    acc[m.provider].push(m);
-    return acc;
-  }, {} as Record<string, typeof AVAILABLE_MODELS>);
+  const groupedModels = AVAILABLE_MODELS.reduce(
+    (acc, m) => {
+      if (!acc[m.provider]) acc[m.provider] = [];
+      acc[m.provider].push(m);
+      return acc;
+    },
+    {} as Record<string, typeof AVAILABLE_MODELS>
+  );
 
   const selectedModelData = AVAILABLE_MODELS.find((m) => m.id === model);
 
@@ -84,7 +80,9 @@ export function ChatInput({
                   <ModelSelectorTrigger asChild>
                     <PromptInputButton>
                       {selectedModelData && (
-                        <ModelSelectorLogo provider={selectedModelData.provider} />
+                        <ModelSelectorLogo
+                          provider={selectedModelData.provider}
+                        />
                       )}
                       {selectedModelData && (
                         <ModelSelectorName>
@@ -97,26 +95,28 @@ export function ChatInput({
                     <ModelSelectorInput placeholder="Search models..." />
                     <ModelSelectorList>
                       <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
-                      {Object.entries(groupedModels).map(([provider, models]) => (
-                        <ModelSelectorGroup heading={provider} key={provider}>
-                          {models.map((m) => (
-                            <ModelSelectorItem
-                              key={m.id}
-                              onSelect={() => {
-                                onModelChange(m.id);
-                                setModelSelectorOpen(false);
-                              }}
-                              value={m.name}
-                            >
-                              <ModelSelectorLogo provider={m.provider} />
-                              <ModelSelectorName>{m.name}</ModelSelectorName>
-                              {model === m.id && (
-                                <CheckIcon className="ml-auto size-4" />
-                              )}
-                            </ModelSelectorItem>
-                          ))}
-                        </ModelSelectorGroup>
-                      ))}
+                      {Object.entries(groupedModels).map(
+                        ([provider, models]) => (
+                          <ModelSelectorGroup heading={provider} key={provider}>
+                            {models.map((m) => (
+                              <ModelSelectorItem
+                                key={m.id}
+                                onSelect={() => {
+                                  onModelChange(m.id);
+                                  setModelSelectorOpen(false);
+                                }}
+                                value={m.name}
+                              >
+                                <ModelSelectorLogo provider={m.provider} />
+                                <ModelSelectorName>{m.name}</ModelSelectorName>
+                                {model === m.id && (
+                                  <CheckIcon className="ml-auto size-4" />
+                                )}
+                              </ModelSelectorItem>
+                            ))}
+                          </ModelSelectorGroup>
+                        )
+                      )}
                     </ModelSelectorList>
                   </ModelSelectorContent>
                 </ModelSelector>
@@ -125,7 +125,7 @@ export function ChatInput({
             </PromptInputFooter>
           </PromptInput>
         </PromptInputProvider>
-        
+
         <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
           <span>Shift+Enter for new line</span>
           <span>Verify important info</span>

@@ -1,4 +1,4 @@
-import { ArrowRight, Copy, Link2, Sparkles } from "lucide-react";
+import { ArrowRight, Copy, Sparkles } from "lucide-react";
 import {
   HowToModal,
   HowToButton,
@@ -17,7 +17,7 @@ export default function ImportPage() {
           <div className="flex flex-col sm:flex-row items-start justify-between gap-6 mb-10">
             <div>
               <div className="inline-flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm shadow-primary/15">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center shadow-sm shadow-primary/15">
                   <Sparkles className="text-primary-foreground" size={18} />
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">
@@ -25,8 +25,8 @@ export default function ImportPage() {
                 </h1>
               </div>
               <p className="text-muted-foreground mt-2 max-w-xl">
-                Continue any conversation. Paste a transcript (best) or try
-                importing a share link.
+                Continue any conversation. Capture from link (best) or paste a
+                transcript.
               </p>
             </div>
             <div className="hidden sm:block pt-2">

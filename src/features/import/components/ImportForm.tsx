@@ -27,7 +27,7 @@ type ImportMethod = "manual" | "capture";
 
 export function ImportForm() {
   const router = useRouter();
-  const [method, setMethod] = useState<ImportMethod>("manual");
+  const [method, setMethod] = useState<ImportMethod>("capture");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCaptureOpen, setIsCaptureOpen] = useState(false);
   const [captureUrl, setCaptureUrl] = useState<string>("");
@@ -172,21 +172,6 @@ export function ImportForm() {
       <div className="flex gap-2 p-1 bg-muted rounded-lg">
         <button
           onClick={() => {
-            setMethod("manual");
-            reset();
-          }}
-          className={cn(
-            "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all",
-            method === "manual"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <FileText size={16} className="inline mr-2" />
-          Paste Transcript
-        </button>
-        <button
-          onClick={() => {
             setMethod("capture");
             reset();
           }}
@@ -199,6 +184,21 @@ export function ImportForm() {
         >
           <Link2 size={16} className="inline mr-2" />
           Capture from link
+        </button>
+        <button
+          onClick={() => {
+            setMethod("manual");
+            reset();
+          }}
+          className={cn(
+            "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all",
+            method === "manual"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <FileText size={16} className="inline mr-2" />
+          Paste Transcript
         </button>
       </div>
 
@@ -310,8 +310,7 @@ Or just paste the raw text - we'll figure it out!`}
           <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
             <p className="text-xs text-primary">
               Paste a share link and we’ll guide you through a quick
-              screen-capture → OCR import. (This works even when providers block
-              scraping.)
+              screen-capture → OCR import.
             </p>
           </div>
 

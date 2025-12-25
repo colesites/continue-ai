@@ -3,13 +3,7 @@
 import { cn } from "@/utils/cn";
 import { Copy, Check } from "lucide-react";
 import { useState } from "react";
-
-interface ChatMessageProps {
-  role: "user" | "assistant" | "system";
-  content: string;
-  isImported?: boolean;
-  isStreaming?: boolean;
-}
+import type { ChatMessageProps } from "@/features/chat/types";
 
 export function ChatMessage({
   role,
@@ -30,8 +24,15 @@ export function ChatMessage({
   const isUser = role === "user";
 
   return (
-    <div className={cn("py-3", isUser ? "flex justify-end" : "flex justify-start")}>
-      <div className={cn("group w-full max-w-[92%] sm:max-w-[80%]", isUser && "ml-auto")}>
+    <div
+      className={cn("py-3", isUser ? "flex justify-end" : "flex justify-start")}
+    >
+      <div
+        className={cn(
+          "group w-full max-w-[92%] sm:max-w-[80%]",
+          isUser && "ml-auto"
+        )}
+      >
         {/* Bubble */}
         <div
           className={cn(
@@ -110,11 +111,16 @@ function MessageContent({
         return (
           <div key={i}>
             {lines.map((line, j) => (
-              <p key={j} className="mb-2 last:mb-0 wrap-break-word whitespace-pre-wrap">
+              <p
+                key={j}
+                className="mb-2 last:mb-0 wrap-break-word whitespace-pre-wrap"
+              >
                 {line}
-                {isStreaming && i === paragraphs.length - 1 && j === lines.length - 1 && (
-                  <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse" />
-                )}
+                {isStreaming &&
+                  i === paragraphs.length - 1 &&
+                  j === lines.length - 1 && (
+                    <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse" />
+                  )}
               </p>
             ))}
           </div>
@@ -123,4 +129,3 @@ function MessageContent({
     </>
   );
 }
-

@@ -11,15 +11,15 @@ export interface ModelOption {
 export const AVAILABLE_MODELS: ModelOption[] = [
   // OpenAI
   {
-    id: "openai/gpt-4o",
-    name: "GPT-4o",
+    id: "openai/gpt-5",
+    name: "GPT-5",
     provider: "openai",
     description: "Most capable OpenAI model",
     isDefault: true,
   },
   {
-    id: "openai/gpt-4o-mini",
-    name: "GPT-4o Mini",
+    id: "openai/gpt-5.2",
+    name: "GPT-5.2",
     provider: "openai",
     description: "Fast and efficient",
   },
@@ -38,14 +38,14 @@ export const AVAILABLE_MODELS: ModelOption[] = [
   },
   // Google (via AI Gateway)
   {
-    id: "google/gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
+    id: "google/gemini-3.0-flash",
+    name: "Gemini 3.0 Flash",
     provider: "google",
     description: "Latest Gemini model",
   },
   {
-    id: "google/gemini-1.5-pro",
-    name: "Gemini 1.5 Pro",
+    id: "google/gemini-3.0-pro",
+    name: "Gemini 3.0 Pro",
     provider: "google",
     description: "Advanced capabilities",
   },
