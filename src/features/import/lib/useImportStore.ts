@@ -1,10 +1,17 @@
 import { create } from "zustand";
 import type { Provider } from "@/utils/url-safety";
 import type { ImportPreviewResponse, NormalizedTranscript } from "../types";
+import { getDefaultModel } from "@/lib/models";
 
 interface ImportStore {
   // State
-  status: "idle" | "scanning" | "previewing" | "importing" | "error" | "success";
+  status:
+    | "idle"
+    | "scanning"
+    | "previewing"
+    | "importing"
+    | "error"
+    | "success";
   url: string;
   provider: Provider | null;
   preview: ImportPreviewResponse | null;
@@ -12,6 +19,9 @@ interface ImportStore {
   error: string | null;
   chatId: string | null;
   requiresManualPaste: boolean;
+  method: "capture" | "manual";
+  selectedModel: string;
+  initialStream: MediaStream | null;
 
   // Actions
   setUrl: (url: string) => void;
@@ -23,6 +33,9 @@ interface ImportStore {
   startImport: () => void;
   importSuccess: (chatId: string) => void;
   importError: (error: string) => void;
+  setMethod: (method: "capture" | "manual") => void;
+  setSelectedModel: (model: string) => void;
+  setInitialStream: (stream: MediaStream | null) => void;
   reset: () => void;
 }
 
@@ -36,6 +49,9 @@ export const useImportStore = create<ImportStore>((set) => ({
   error: null,
   chatId: null,
   requiresManualPaste: false,
+  method: "capture",
+  selectedModel: getDefaultModel().id,
+  initialStream: null,
 
   // Actions
   setUrl: (url) => set({ url }),
@@ -84,6 +100,9 @@ export const useImportStore = create<ImportStore>((set) => ({
       error,
     }),
 
+  setMethod: (method) => set({ method }),
+  setSelectedModel: (selectedModel) => set({ selectedModel }),
+  setInitialStream: (initialStream) => set({ initialStream }),
   reset: () =>
     set({
       status: "idle",

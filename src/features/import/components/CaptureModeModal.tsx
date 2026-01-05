@@ -5,6 +5,7 @@ import { X, ExternalLink, Loader2, Video, ScanText } from "lucide-react";
 
 import { cn } from "@/utils/cn";
 import type { NormalizedTranscript } from "@/features/import/types";
+import { useImportStore } from "@/features/import/lib/useImportStore";
 
 type CaptureStatus =
   | "idle"
@@ -22,6 +23,7 @@ export function CaptureModeModal({
   onCaptured,
   onAutoStartComplete,
   onCaptureReady,
+  model = "openai/gpt-4o",
 }: {
   isOpen: boolean;
   url: string;
@@ -30,6 +32,7 @@ export function CaptureModeModal({
   onCaptured: (transcript: NormalizedTranscript) => void;
   onAutoStartComplete?: () => void;
   onCaptureReady?: (href: string) => void;
+  model?: string;
 }) {
   const [status, setStatus] = React.useState<CaptureStatus>("idle");
   const [error, setError] = React.useState<string | null>(null);
@@ -42,6 +45,8 @@ export function CaptureModeModal({
   const framesLenRef = React.useRef<number>(0);
   const framesRef = React.useRef<string[]>([]);
   const notifiedCaptureRef = React.useRef<boolean>(false);
+
+  const { initialStream, setInitialStream } = useImportStore();
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -90,8 +95,7 @@ export function CaptureModeModal({
         body: JSON.stringify({
           url,
           frames: framesToSend,
-          // Default to a strong vision model via AI Gateway.
-          model: "openai/gpt-4o",
+          model,
         }),
       });
 
@@ -125,10 +129,9 @@ export function CaptureModeModal({
       });
 
       streamRef.current = stream;
-      if (!notifiedCaptureRef.current) {
-        notifiedCaptureRef.current = true;
-        onCaptureReady?.(url);
-      }
+
+      // Auto-open link after recording starts successfully - crucial for Safari gesture context
+      onCaptureReady?.(url);
 
       // If user stops sharing via browser UI, reflect it.
       const [videoTrack] = stream.getVideoTracks();
@@ -194,18 +197,6 @@ export function CaptureModeModal({
     }
   }, [clearIntervalSafe, handleProcess, onCaptureReady, stopTracks, url]);
 
-  // Attempt to auto-start capture when the modal opens from a paste action.
-  React.useEffect(() => {
-    if (!isOpen || !autoStart) return;
-    if (status !== "idle") return;
-    const timer = window.setTimeout(() => {
-      Promise.resolve(handleStartCapture()).finally(() =>
-        onAutoStartComplete?.()
-      );
-    }, 150);
-    return () => window.clearTimeout(timer);
-  }, [isOpen, autoStart, status, onAutoStartComplete, handleStartCapture]);
-
   const handleStopCapture = () => {
     clearIntervalSafe();
     stopTracks();
@@ -215,6 +206,83 @@ export function CaptureModeModal({
       void handleProcess();
     }
   };
+
+  // Handle initial stream from store (gesture-safe auto-start)
+  React.useEffect(() => {
+    if (!isOpen || !initialStream) return;
+
+    // If we have an initial stream, we need to set it up immediately.
+    const setupStream = async (stream: MediaStream) => {
+      setStatus("capturing");
+      streamRef.current = stream;
+
+      // Auto-open link ONLY after recording starts
+      onCaptureReady?.(url);
+
+      const [videoTrack] = stream.getVideoTracks();
+      if (videoTrack) {
+        videoTrack.onended = () => {
+          clearIntervalSafe();
+          stopTracks();
+          setStatus((s) => (s === "capturing" ? "stopped" : s));
+          if (framesRef.current.length > 0) {
+            void handleProcess();
+          }
+        };
+      }
+
+      const video = document.createElement("video");
+      video.muted = true;
+      video.playsInline = true;
+      video.srcObject = stream;
+      await video.play();
+      videoRef.current = video;
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const MAX_FRAMES = 24;
+      intervalRef.current = window.setInterval(() => {
+        if (!videoRef.current) return;
+        if (framesLenRef.current >= MAX_FRAMES) return;
+
+        const w = videoRef.current.videoWidth || 1280;
+        const h = videoRef.current.videoHeight || 720;
+        canvas.width = w;
+        canvas.height = h;
+
+        try {
+          ctx.drawImage(videoRef.current, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          setFrames((prev) => {
+            if (prev.length >= MAX_FRAMES) return prev;
+            const next = [...prev, dataUrl];
+            framesLenRef.current = next.length;
+            framesRef.current = next;
+            return next;
+          });
+          setFrameCount((c) => c + 1);
+        } catch {}
+      }, 500);
+
+      // Consume the stream
+      setInitialStream(null);
+      onAutoStartComplete?.();
+    };
+
+    void setupStream(initialStream);
+  }, [
+    isOpen,
+    initialStream,
+    url,
+    clearIntervalSafe,
+    handleProcess,
+    onCaptureReady,
+    setInitialStream,
+    stopTracks,
+    onAutoStartComplete,
+  ]);
 
   if (!isOpen) return null;
 
@@ -288,9 +356,12 @@ export function CaptureModeModal({
             {status !== "capturing" ? (
               <button
                 onClick={handleStartCapture}
+                disabled={status === "uploading"}
                 className={cn(
-                  "flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold transition-colors",
-                  "bg-indigo-600 hover:bg-indigo-500 text-white"
+                  "flex-1 inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold transition-all",
+                  status === "uploading"
+                    ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                    : "bg-indigo-600 hover:bg-indigo-500 text-white"
                 )}
               >
                 <Video size={18} />

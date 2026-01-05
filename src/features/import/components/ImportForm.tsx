@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import {
@@ -11,6 +11,7 @@ import {
   Sparkles,
   ExternalLink,
   Video,
+  CheckIcon,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import {
@@ -22,33 +23,55 @@ import { useImportStore } from "../lib/useImportStore";
 import { api } from "../../../../convex/_generated/api";
 import type { NormalizedTranscript } from "../types";
 import { CaptureModeModal } from "./CaptureModeModal";
+import {
+  ModelSelector,
+  ModelSelectorContent,
+  ModelSelectorEmpty,
+  ModelSelectorGroup,
+  ModelSelectorInput,
+  ModelSelectorItem,
+  ModelSelectorList,
+  ModelSelectorLogo,
+  ModelSelectorName,
+  ModelSelectorTrigger,
+} from "@/components/ai-elements/model-selector";
+import { AVAILABLE_MODELS } from "@/lib/models";
 
 type ImportMethod = "manual" | "capture";
 
 export function ImportForm() {
   const router = useRouter();
-  const [method, setMethod] = useState<ImportMethod>("capture");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCaptureOpen, setIsCaptureOpen] = useState(false);
-  const [captureUrl, setCaptureUrl] = useState<string>("");
-  const [autoStartCapture, setAutoStartCapture] = useState(false);
   const {
     status,
     url,
+    method,
     provider,
     manualTranscript,
+    selectedModel,
     error,
     setUrl,
+    setMethod,
+    setSelectedModel,
     setProvider,
     setManualTranscript,
     startImport,
     importSuccess,
     importError,
+    setInitialStream,
     reset,
   } = useImportStore();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCaptureOpen, setIsCaptureOpen] = useState(false);
+  const [captureUrl, setCaptureUrl] = useState<string>("");
+  const [autoStartCapture, setAutoStartCapture] = useState(false);
+
   const createChat = useMutation(api.chats.createChat);
   const addMessage = useMutation(api.messages.addMessage);
+
+  useEffect(() => {
+    reset();
+  }, [reset]);
 
   const openLinkInNewTab = (href: string) => {
     if (typeof window === "undefined") return;
@@ -62,24 +85,39 @@ export function ImportForm() {
     }
   };
 
-  const handleUrlChange = (value: string, openCaptureOnPaste = false) => {
+  const handleUrlChange = (value: string) => {
     setUrl(value);
     const detected = detectProvider(value);
     setProvider(detected);
+  };
 
-    // Only auto-open capture when the user is in Capture Mode *and* this change came from paste.
-    // (Recording still requires a click due to browser permissions.)
-    if (
-      method === "capture" &&
-      openCaptureOnPaste &&
-      value.trim() &&
-      detected &&
-      detected !== "unknown"
-    ) {
-      const trimmed = value.trim();
-      setCaptureUrl(trimmed);
+  const initiateCapture = async (
+    targetUrl: string,
+    detectedProvider?: typeof provider
+  ) => {
+    const activeProvider = detectedProvider || provider;
+    if (!targetUrl || !activeProvider || activeProvider === "unknown") return;
+
+    try {
+      // 1. Start screen capture immediately (must be in gesture handler)
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          frameRate: 2,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+
+      // 2. Store stream and open modal
+      setInitialStream(stream);
+      setCaptureUrl(targetUrl);
       setIsCaptureOpen(true);
-      setAutoStartCapture(true);
+    } catch (err) {
+      console.error("Failed to initiate capture:", err);
+      // Fallback to manual trigger in modal if stream fails
+      setCaptureUrl(targetUrl);
+      setIsCaptureOpen(true);
     }
   };
 
@@ -99,8 +137,6 @@ export function ImportForm() {
         title: transcript.title || "Imported Chat",
         provider: transcript.provider,
         sourceUrl: transcript.sourceUrl,
-        // Capture mode is still user-assisted, so store as "manual" for now.
-        // (If you want, we can extend Convex schema to add a "capture" enum.)
         importMethod: "manual",
         messages: transcript.messages.map((m) => ({
           role: m.role,
@@ -116,6 +152,7 @@ export function ImportForm() {
       });
 
       importSuccess(chatId);
+      setUrl("");
       router.push(`/chat/${chatId}`);
     } catch (err) {
       console.error("Capture import error:", err);
@@ -142,6 +179,7 @@ export function ImportForm() {
       });
 
       importSuccess(chatId);
+      setUrl("");
       router.push(`/chat/${chatId}`);
     } catch (err) {
       console.error("Manual import error:", err);
@@ -167,6 +205,7 @@ export function ImportForm() {
           setAutoStartCapture(false);
         }}
         onCaptured={handleCapturedTranscript}
+        model={selectedModel}
       />
       {/* Method Toggle */}
       <div className="flex gap-2 p-1 bg-muted rounded-lg">
@@ -212,7 +251,14 @@ export function ImportForm() {
             <input
               type="url"
               value={url}
-              onChange={(e) => handleUrlChange(e.target.value, false)}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData("text");
+                if (pasted) {
+                  handleUrlChange(pasted);
+                }
+              }}
               placeholder="Paste shared link (optional)"
               disabled={isImporting}
               className={cn(
@@ -313,41 +359,61 @@ Or just paste the raw text - we'll figure it out!`}
               screen-capture → OCR import.
             </p>
           </div>
-
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <Link2 size={20} />
-            </div>
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => handleUrlChange(e.target.value, false)}
-              onPaste={(e) => {
-                const pasted = e.clipboardData.getData("text");
-                if (pasted) handleUrlChange(pasted, true);
-              }}
-              placeholder="Paste a shared chat link (Gemini / ChatGPT / Claude)..."
-              disabled={isImporting}
-              className={cn(
-                "w-full pl-12 pr-4 py-4 rounded-xl bg-background border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
-                provider && provider !== "unknown"
-                  ? "border-primary/50"
-                  : "border-input"
-              )}
-            />
-            {provider && provider !== "unknown" && (
-              <div
-                className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-xs font-medium"
-                style={{
-                  backgroundColor: `${getProviderColor(provider)}20`,
-                  color: getProviderColor(provider),
-                }}
-              >
-                {getProviderDisplayName(provider)}
+          <div className="relative group/input flex items-stretch gap-2">
+            <div className="relative flex-1">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Link2 size={20} />
               </div>
-            )}
-          </div>
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pasted = e.clipboardData.getData("text");
+                  if (pasted) {
+                    handleUrlChange(pasted);
+                    const detected = detectProvider(pasted);
+                    if (
+                      method === "capture" &&
+                      detected &&
+                      detected !== "unknown"
+                    ) {
+                      void initiateCapture(pasted, detected);
+                    }
+                  }
+                }}
+                placeholder="Paste a shared chat link (Gemini / ChatGPT / Claude)..."
+                disabled={isImporting}
+                className={cn(
+                  "w-full pl-12 pr-4 py-4 rounded-xl bg-background border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
+                  provider && provider !== "unknown"
+                    ? "border-primary/50"
+                    : "border-input"
+                )}
+              />
+              {provider && provider !== "unknown" && (
+                <div
+                  className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-xs font-medium"
+                  style={{
+                    backgroundColor: `${getProviderColor(provider)}20`,
+                    color: getProviderColor(provider),
+                  }}
+                >
+                  {getProviderDisplayName(provider)}
+                </div>
+              )}
+            </div>
 
+            <div className="flex-shrink-0">
+              <ModelSelectorWrapper
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                disabled={isImporting}
+              />
+            </div>
+          </div>{" "}
+          {/* Closing div for "relative group/input flex items-stretch gap-2" */}
           {url.trim() && (
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
               <p className="text-xs text-muted-foreground">
@@ -364,18 +430,15 @@ Or just paste the raw text - we'll figure it out!`}
               </a>
             </div>
           )}
-
           {error && (
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
               {error}
             </div>
           )}
-
           <button
             onClick={() => {
               if (!url.trim() || !provider || provider === "unknown") return;
-              setCaptureUrl(url.trim());
-              setIsCaptureOpen(true);
+              void initiateCapture(url.trim());
             }}
             disabled={
               !url.trim() || !provider || provider === "unknown" || isImporting
@@ -463,4 +526,77 @@ function generateTitle(
       : content;
   }
   return "Imported Chat";
+}
+
+function ModelSelectorWrapper({
+  selectedModel,
+  onModelChange,
+  disabled,
+}: {
+  selectedModel: string;
+  onModelChange: (model: string) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedModelData = AVAILABLE_MODELS.find(
+    (m) => m.id === selectedModel
+  );
+
+  const groupedModels = AVAILABLE_MODELS.reduce(
+    (acc, m) => {
+      if (!acc[m.provider]) acc[m.provider] = [];
+      acc[m.provider].push(m);
+      return acc;
+    },
+    {} as Record<string, typeof AVAILABLE_MODELS>
+  );
+
+  return (
+    <ModelSelector open={open} onOpenChange={setOpen}>
+      <ModelSelectorTrigger asChild>
+        <button
+          disabled={disabled}
+          className="h-full px-4 rounded-xl border border-input bg-background hover:bg-muted transition-colors flex items-center justify-center gap-2 group min-w-[140px]"
+        >
+          {selectedModelData && (
+            <>
+              <ModelSelectorLogo
+                provider={selectedModelData.provider}
+                className="size-4"
+              />
+              <span className="text-sm font-medium text-foreground truncate max-w-[80px]">
+                {selectedModelData.name}
+              </span>
+            </>
+          )}
+        </button>
+      </ModelSelectorTrigger>
+      <ModelSelectorContent title="Select Model for OCR">
+        <ModelSelectorInput placeholder="Search models..." />
+        <ModelSelectorList>
+          <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+          {Object.entries(groupedModels).map(([provider, models]) => (
+            <ModelSelectorGroup heading={provider} key={provider}>
+              {models.map((m) => (
+                <ModelSelectorItem
+                  key={m.id}
+                  onSelect={() => {
+                    onModelChange(m.id);
+                    setOpen(false);
+                  }}
+                  value={m.name}
+                >
+                  <ModelSelectorLogo provider={m.provider} />
+                  <ModelSelectorName>{m.name}</ModelSelectorName>
+                  {selectedModel === m.id && (
+                    <CheckIcon className="ml-auto size-4" />
+                  )}
+                </ModelSelectorItem>
+              ))}
+            </ModelSelectorGroup>
+          ))}
+        </ModelSelectorList>
+      </ModelSelectorContent>
+    </ModelSelector>
+  );
 }

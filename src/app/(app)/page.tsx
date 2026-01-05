@@ -1,3 +1,4 @@
+"use client";
 import { ArrowRight, Copy, Sparkles } from "lucide-react";
 import {
   HowToModal,
@@ -5,8 +6,11 @@ import {
 } from "@/features/import/components/HowToModal";
 import { ImportForm } from "@/features/import/components/ImportForm";
 import { ImportPreviewBox } from "@/features/import/components/ImportPreviewBox";
+import { useImportStore } from "@/features/import/lib/useImportStore";
 
 export default function ImportPage() {
+  const { method } = useImportStore();
+
   return (
     <>
       <HowToModal />
@@ -46,21 +50,46 @@ export default function ImportPage() {
                   How it works
                 </p>
                 <div className="mt-4 space-y-4">
-                  <Step
-                    icon={<Copy size={16} />}
-                    title="Copy the chat"
-                    description="Select the full conversation from the other AI."
-                  />
-                  <Step
-                    icon={<ArrowRight size={16} />}
-                    title="Paste into Continue AI"
-                    description="We’ll parse roles + context so you can pick up instantly."
-                  />
-                  <Step
-                    icon={<Sparkles size={16} />}
-                    title="Keep going with any model"
-                    description="Choose GPT / Claude / Gemini via AI Gateway."
-                  />
+                  {method === "manual" ? (
+                    <>
+                      <Step
+                        icon={<Copy size={16} />}
+                        title="Copy the chat"
+                        description="Select the full conversation from the other AI."
+                      />
+                      <Step
+                        icon={<ArrowRight size={16} />}
+                        title="Paste into Continue AI"
+                        description="We’ll parse roles + context so you can pick up instantly."
+                      />
+                      <Step
+                        icon={<Sparkles size={16} />}
+                        title="Keep going with any model"
+                        description="Choose GPT / Claude / Gemini via AI Gateway."
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Step
+                        icon={<Sparkles size={16} />}
+                        title="Continue"
+                        description="Choose GPT / Claude / Gemini and keep going."
+                      />
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-6 mb-2">
+                        USING A SHARED LINK
+                      </p>
+                      <Step
+                        icon={<Copy size={16} />}
+                        title="Paste share link (Capture Mode)"
+                        description="Capture the share page and OCR it into a transcript."
+                      />
+                      <Step
+                        icon={<ArrowRight size={16} />}
+                        title="Scroll while recording"
+                        description="Start capture, select the share tab, scroll, then OCR & import."
+                      />
+                    </>
+                  )}
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-border">
