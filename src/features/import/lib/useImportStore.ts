@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Provider } from "@/utils/url-safety";
-import type { ImportPreviewResponse, NormalizedTranscript } from "../types";
+import type { ImportPreviewResponse } from "../types";
 import { getDefaultModel } from "@/lib/models";
 
 interface ImportStore {
@@ -15,25 +15,21 @@ interface ImportStore {
   url: string;
   provider: Provider | null;
   preview: ImportPreviewResponse | null;
-  manualTranscript: string;
   error: string | null;
   chatId: string | null;
   requiresManualPaste: boolean;
-  method: "capture" | "manual";
   selectedModel: string;
   initialStream: MediaStream | null;
 
   // Actions
   setUrl: (url: string) => void;
   setProvider: (provider: Provider) => void;
-  setManualTranscript: (text: string) => void;
   startScan: () => void;
   scanSuccess: (preview: ImportPreviewResponse) => void;
   scanError: (error: string, requiresManualPaste?: boolean) => void;
   startImport: () => void;
   importSuccess: (chatId: string) => void;
   importError: (error: string) => void;
-  setMethod: (method: "capture" | "manual") => void;
   setSelectedModel: (model: string) => void;
   setInitialStream: (stream: MediaStream | null) => void;
   reset: () => void;
@@ -45,18 +41,15 @@ export const useImportStore = create<ImportStore>((set) => ({
   url: "",
   provider: null,
   preview: null,
-  manualTranscript: "",
   error: null,
   chatId: null,
   requiresManualPaste: false,
-  method: "capture",
   selectedModel: getDefaultModel().id,
   initialStream: null,
 
   // Actions
   setUrl: (url) => set({ url }),
   setProvider: (provider) => set({ provider }),
-  setManualTranscript: (text) => set({ manualTranscript: text }),
 
   startScan: () =>
     set({
@@ -100,7 +93,6 @@ export const useImportStore = create<ImportStore>((set) => ({
       error,
     }),
 
-  setMethod: (method) => set({ method }),
   setSelectedModel: (selectedModel) => set({ selectedModel }),
   setInitialStream: (initialStream) => set({ initialStream }),
   reset: () =>
@@ -109,10 +101,10 @@ export const useImportStore = create<ImportStore>((set) => ({
       url: "",
       provider: null,
       preview: null,
-      manualTranscript: "",
       error: null,
       chatId: null,
       requiresManualPaste: false,
     }),
 }));
+
 

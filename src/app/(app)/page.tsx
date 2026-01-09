@@ -6,11 +6,8 @@ import {
 } from "@/features/import/components/HowToModal";
 import { ImportForm } from "@/features/import/components/ImportForm";
 import { ImportPreviewBox } from "@/features/import/components/ImportPreviewBox";
-import { useImportStore } from "@/features/import/lib/useImportStore";
 
 export default function ImportPage() {
-  const { method } = useImportStore();
-
   return (
     <>
       <HowToModal />
@@ -29,8 +26,7 @@ export default function ImportPage() {
                 </h1>
               </div>
               <p className="text-muted-foreground mt-2 max-w-xl">
-                Continue any conversation. Capture from link (best) or paste a
-                transcript.
+                Continue any conversation by capturing from a share link.
               </p>
             </div>
             <div className="hidden sm:block pt-2">
@@ -50,46 +46,21 @@ export default function ImportPage() {
                   How it works
                 </p>
                 <div className="mt-4 space-y-4">
-                  {method === "manual" ? (
-                    <>
-                      <Step
-                        icon={<Copy size={16} />}
-                        title="Copy the chat"
-                        description="Select the full conversation from the other AI."
-                      />
-                      <Step
-                        icon={<ArrowRight size={16} />}
-                        title="Paste into Continue AI"
-                        description="We’ll parse roles + context so you can pick up instantly."
-                      />
-                      <Step
-                        icon={<Sparkles size={16} />}
-                        title="Keep going with any model"
-                        description="Choose GPT / Claude / Gemini via AI Gateway."
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <Step
-                        icon={<Sparkles size={16} />}
-                        title="Continue"
-                        description="Choose GPT / Claude / Gemini and keep going."
-                      />
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-6 mb-2">
-                        USING A SHARED LINK
-                      </p>
-                      <Step
-                        icon={<Copy size={16} />}
-                        title="Paste share link (Capture Mode)"
-                        description="Capture the share page and OCR it into a transcript."
-                      />
-                      <Step
-                        icon={<ArrowRight size={16} />}
-                        title="Scroll while recording"
-                        description="Start capture, select the share tab, scroll, then OCR & import."
-                      />
-                    </>
-                  )}
+                  <Step
+                    icon={<Copy size={16} />}
+                    title="Paste share link (Capture Mode)"
+                    description="Capture the share page and OCR it into a transcript."
+                  />
+                  <Step
+                    icon={<ArrowRight size={16} />}
+                    title="Scroll while recording"
+                    description="Start capture, select the share tab, scroll, then OCR & import."
+                  />
+                  <Step
+                    icon={<Sparkles size={16} />}
+                    title="Continue"
+                    description="Choose T3 Chat / ChatGPT / Claude / Gemini and keep going."
+                  />
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-border">
@@ -97,7 +68,8 @@ export default function ImportPage() {
                     Works with
                   </p>
                   <div className="mt-3 flex items-center gap-3 flex-wrap">
-                    <ProviderPill name="ChatGPT" color="#10a37f" />
+                    <ProviderPill name="T3 Chat" color="#48132b" />
+                    <ProviderPill name="ChatGPT" color="#ffffff" />
                     <ProviderPill name="Gemini" color="#4285f4" />
                     <ProviderPill name="Claude" color="#cc785c" />
                     <ProviderPill name="Perplexity" color="#20b8cd" />

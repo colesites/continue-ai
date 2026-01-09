@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { Toaster } from "sonner";
 import { Providers } from "./providers";
 import "./globals.css";
 
