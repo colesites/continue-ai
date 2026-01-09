@@ -104,6 +104,20 @@ export function ImportForm() {
     const activeProvider = detectedProvider || provider;
     if (!targetUrl || !activeProvider || activeProvider === "unknown") return;
 
+    const supportsScreenCapture =
+      typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices &&
+      typeof navigator.mediaDevices.getDisplayMedia === "function";
+
+    if (!supportsScreenCapture) {
+      toast.error(
+        isMobile
+          ? "Screen recording isn’t supported on this mobile browser. Please paste the transcript manually."
+          : "Screen recording isn’t supported in this browser. Try Chrome, Edge, or another desktop browser."
+      );
+      return;
+    }
+
     try {
       // 1. Start screen capture immediately (must be in gesture handler)
       const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -121,9 +135,13 @@ export function ImportForm() {
       setIsCaptureOpen(true);
     } catch (err) {
       console.error("Failed to initiate capture:", err);
-      const message =
-        err instanceof DOMException && err.name === "NotAllowedError"
-          ? "Screen recording permission denied. Please enable screen recording to use Capture Mode."
+      const isPermissionDeniedError =
+        err instanceof DOMException && err.name === "NotAllowedError";
+
+      const message = isPermissionDeniedError
+        ? "Screen recording permission denied. Please enable screen recording to use Capture Mode."
+        : isMobile
+          ? "We couldn’t start screen capture on this mobile browser. Try again or paste the transcript manually."
           : "We could not start screen capture. Please allow screen recording and try again.";
 
       toast.error(message);
