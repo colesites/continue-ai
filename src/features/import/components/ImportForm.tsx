@@ -54,6 +54,11 @@ const ASSISTANT_LABELS = [
   "bard",
 ];
 
+const SHARE_ROLE_REGEX =
+  /^(you|chatgpt|claude|gemini|assistant|ai)\s+(said|says|wrote|writes|replied|replies|reply|response|responded)\s*:?\s*(.*)$/i;
+const SHARE_ROLE_HEADER_REGEX =
+  /^(you|chatgpt|claude|gemini|assistant|ai)\s+(said|says|wrote|writes|replied|replies|reply|response|responded)\s*$/i;
+
 const NOISE_PATTERNS = [
   /no file chosen/i,
   /chatgpt can make mistakes/i,
@@ -597,6 +602,16 @@ function buildManualTranscript({
       continue;
     }
 
+    const shareMatch = line.match(SHARE_ROLE_REGEX);
+    if (shareMatch) {
+      flush();
+      currentRole = mapLabelToRole(shareMatch[1]) ?? currentRole;
+      if (shareMatch[3]) {
+        buffer.push(shareMatch[3]);
+      }
+      continue;
+    }
+
     const standaloneRole = detectStandaloneRoleCue(line);
     if (standaloneRole) {
       flush();
@@ -673,6 +688,14 @@ function detectStandaloneRoleCue(
 ): NormalizedMessage["role"] | null {
   const normalized = normalizeLabelInput(line);
   if (!normalized) return null;
+
+  if (SHARE_ROLE_HEADER_REGEX.test(normalized)) {
+    const [, speaker] =
+      normalized.match(/^(you|chatgpt|claude|gemini|assistant|ai)/i) || [];
+    if (speaker) {
+      return mapLabelToRole(speaker);
+    }
+  }
 
   if (
     !/^(?:[a-z]+\s?)+(?:\s+(?:said|says|wrote|writes|replied|reply|response))?$/i.test(
