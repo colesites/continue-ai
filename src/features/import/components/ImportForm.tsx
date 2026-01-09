@@ -586,25 +586,21 @@ function buildManualTranscript({
 
   for (const rawLine of sanitizedLines) {
     const line = rawLine;
-    const normalized = stripFormatting(line);
-    const labelledMatch = normalized.match(/^([^:：\-]+)\s*[:：\-]\s*(.*)$/i);
-    const roleFromLabel =
-      labelledMatch?.[1] && mapLabelToRole(labelledMatch[1]);
 
-    if (labelledMatch && roleFromLabel) {
+    const inlineLabel = parseInlineLabel(line);
+    if (inlineLabel) {
       flush();
-      currentRole = roleFromLabel;
-      const remainder = labelledMatch[2].trim();
-      if (remainder) {
-        buffer.push(remainder);
+      currentRole = inlineLabel.role;
+      if (inlineLabel.content) {
+        buffer.push(inlineLabel.content);
       }
       continue;
     }
 
-    const roleFromStandalone = mapLabelToRole(normalized);
-    if (roleFromStandalone && !labelledMatch) {
+    const standaloneRole = detectStandaloneRoleCue(line);
+    if (standaloneRole) {
       flush();
-      currentRole = roleFromStandalone;
+      currentRole = standaloneRole;
       continue;
     }
 
@@ -654,20 +650,65 @@ function stripFormatting(input: string): string {
     .trim();
 }
 
-function mapLabelToRole(label: string): NormalizedMessage["role"] | null {
-  const normalized = stripFormatting(label).toLowerCase();
+function normalizeLabelInput(input: string): string {
+  return stripFormatting(input)
+    .toLowerCase()
+    .replace(/[:：\-]+$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseInlineLabel(
+  line: string
+): { role: NormalizedMessage["role"]; content: string } | null {
+  const match = line.match(/^([^:：\-]+)\s*[:：\-]\s*(.*)$/);
+  if (!match) return null;
+  const role = mapLabelToRole(match[1]);
+  if (!role) return null;
+  return { role, content: match[2] };
+}
+
+function detectStandaloneRoleCue(
+  line: string
+): NormalizedMessage["role"] | null {
+  const normalized = normalizeLabelInput(line);
   if (!normalized) return null;
-  if (normalized.includes("system")) return "system";
+
+  if (
+    !/^(?:[a-z]+\s?)+(?:\s+(?:said|says|wrote|writes|replied|reply|response))?$/i.test(
+      normalized
+    )
+  ) {
+    return null;
+  }
+
+  return mapLabelToRole(normalized);
+}
+
+function mapLabelToRole(label: string): NormalizedMessage["role"] | null {
+  let normalized = normalizeLabelInput(label);
+  normalized = normalized
+    .replace(/\b(said|says|wrote|writes|replied|reply|response)\b/g, "")
+    .trim();
+  if (!normalized) return null;
+
+  if (normalized.startsWith("system")) return "system";
   if (
     USER_LABELS.some(
-      (token) => normalized === token || normalized.includes(`${token}:`)
+      (token) =>
+        normalized === token ||
+        normalized.startsWith(`${token} `) ||
+        normalized.startsWith(`${token}:`)
     )
   ) {
     return "user";
   }
   if (
     ASSISTANT_LABELS.some(
-      (token) => normalized === token || normalized.includes(`${token}:`)
+      (token) =>
+        normalized === token ||
+        normalized.startsWith(`${token} `) ||
+        normalized.startsWith(`${token}:`)
     )
   ) {
     return "assistant";
