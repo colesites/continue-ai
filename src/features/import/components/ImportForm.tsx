@@ -584,28 +584,55 @@ function buildManualTranscript({
     buffer = [];
   };
 
-  for (const line of sanitizedLines) {
-    const match = line.match(/^([^:：\-]+)\s*[:：\-]\s*(.*)$/i);
-    const maybeRole = match ? mapLabelToRole(match[1]) : null;
+  for (const rawLine of sanitizedLines) {
+    const line = rawLine;
+    const normalized = stripFormatting(line);
+    const labelledMatch = normalized.match(/^([^:：\-]+)\s*[:：\-]\s*(.*)$/i);
+    const roleFromLabel =
+      labelledMatch?.[1] && mapLabelToRole(labelledMatch[1]);
 
-    if (match && maybeRole) {
+    if (labelledMatch && roleFromLabel) {
       flush();
-      currentRole = maybeRole;
-      const remainder = match[2].trim();
+      currentRole = roleFromLabel;
+      const remainder = labelledMatch[2].trim();
       if (remainder) {
         buffer.push(remainder);
       }
-    } else {
-      buffer.push(line);
+      continue;
     }
+
+    const roleFromStandalone = mapLabelToRole(normalized);
+    if (roleFromStandalone && !labelledMatch) {
+      flush();
+      currentRole = roleFromStandalone;
+      continue;
+    }
+
+    buffer.push(line);
   }
 
   flush();
 
   if (!messages.length) {
-    throw new Error(
-      'No messages detected. Please format lines like "User: ..." and "Assistant: ...".'
-    );
+    const fallbackChunks = sanitizedLines
+      .join("\n")
+      .split(/\n{2,}/)
+      .map((chunk) => chunk.trim())
+      .filter(Boolean);
+
+    if (!fallbackChunks.length) {
+      throw new Error(
+        'No messages detected. Please format lines like "User: ..." and "Assistant: ...".'
+      );
+    }
+
+    fallbackChunks.forEach((chunk, index) => {
+      messages.push({
+        role: index % 2 === 0 ? "user" : "assistant",
+        content: chunk,
+        order: index,
+      });
+    });
   }
 
   const generatedTitle = title?.trim() || deriveTitleFromMessages(messages);
@@ -619,14 +646,30 @@ function buildManualTranscript({
   };
 }
 
+function stripFormatting(input: string): string {
+  return input
+    .trim()
+    .replace(/^[*_`~]+/, "")
+    .replace(/[*_`~]+$/, "")
+    .trim();
+}
+
 function mapLabelToRole(label: string): NormalizedMessage["role"] | null {
-  const normalized = label.trim().toLowerCase();
+  const normalized = stripFormatting(label).toLowerCase();
   if (!normalized) return null;
   if (normalized.includes("system")) return "system";
-  if (USER_LABELS.some((token) => normalized.includes(token))) {
+  if (
+    USER_LABELS.some(
+      (token) => normalized === token || normalized.includes(`${token}:`)
+    )
+  ) {
     return "user";
   }
-  if (ASSISTANT_LABELS.some((token) => normalized.includes(token))) {
+  if (
+    ASSISTANT_LABELS.some(
+      (token) => normalized === token || normalized.includes(`${token}:`)
+    )
+  ) {
     return "assistant";
   }
   return null;
