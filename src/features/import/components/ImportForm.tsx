@@ -94,6 +94,7 @@ export function ImportForm() {
   const [isMobile, setIsMobile] = useState(false);
   const [manualTranscript, setManualTranscript] = useState("");
   const [manualTitle, setManualTitle] = useState("");
+  const [isManualImporting, setIsManualImporting] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -248,6 +249,7 @@ export function ImportForm() {
 
     const manualProvider = provider ?? "unknown";
 
+    setIsManualImporting(true);
     try {
       const transcript = buildManualTranscript({
         raw: manualTranscript,
@@ -264,11 +266,16 @@ export function ImportForm() {
           ? err.message
           : "We couldn’t parse this transcript. Please ensure it includes clear User:/Assistant: labels.";
       toast.error(message);
+    } finally {
+      setIsManualImporting(false);
     }
   };
 
   const isProcessing =
-    status === "scanning" || status === "importing" || isSubmitting;
+    status === "scanning" ||
+    status === "importing" ||
+    isSubmitting ||
+    isManualImporting;
   const helperText = isMobile
     ? "Mobile import: copy the full conversation from your AI app and paste it below. Capture Mode isn't available on phones."
     : "Desktop Capture Mode: paste a shared link and we'll capture the page automatically.";
@@ -591,8 +598,9 @@ function buildManualTranscript({
 
   for (const rawLine of sanitizedLines) {
     const line = rawLine;
+    const trimmed = line.trim();
 
-    const inlineLabel = parseInlineLabel(line);
+    const inlineLabel = parseInlineLabel(trimmed);
     if (inlineLabel) {
       flush();
       currentRole = inlineLabel.role;
@@ -602,7 +610,7 @@ function buildManualTranscript({
       continue;
     }
 
-    const shareMatch = line.match(SHARE_ROLE_REGEX);
+    const shareMatch = trimmed.match(SHARE_ROLE_REGEX);
     if (shareMatch) {
       flush();
       currentRole = mapLabelToRole(shareMatch[1]) ?? currentRole;
@@ -612,7 +620,7 @@ function buildManualTranscript({
       continue;
     }
 
-    const standaloneRole = detectStandaloneRoleCue(line);
+    const standaloneRole = detectStandaloneRoleCue(trimmed);
     if (standaloneRole) {
       flush();
       currentRole = standaloneRole;
