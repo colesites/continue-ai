@@ -11,10 +11,12 @@ import {
   getProviderDisplayName,
   getProviderColor,
 } from "@/utils/url-safety";
+import type { Provider } from "@/utils/url-safety";
 import { useImportStore } from "../lib/useImportStore";
 import { api } from "../../../../convex/_generated/api";
-import type { NormalizedTranscript } from "../types";
+import type { NormalizedTranscript, NormalizedMessage } from "../types";
 import { CaptureModeModal } from "./CaptureModeModal";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ModelSelector,
   ModelSelectorContent,
@@ -28,6 +30,39 @@ import {
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
 import { AVAILABLE_MODELS } from "@/lib/models";
+
+const PROVIDER_OPTIONS: { value: Provider; label: string }[] = [
+  { value: "chatgpt", label: "ChatGPT" },
+  { value: "claude", label: "Claude" },
+  { value: "gemini", label: "Gemini" },
+  { value: "perplexity", label: "Perplexity" },
+  { value: "grok", label: "Grok" },
+  { value: "unknown", label: "Other / Unknown" },
+];
+
+const USER_LABELS = ["user", "you", "me", "customer", "human"];
+const ASSISTANT_LABELS = [
+  "assistant",
+  "ai",
+  "model",
+  "bot",
+  "claude",
+  "chatgpt",
+  "gemini",
+  "perplexity",
+  "grok",
+  "bard",
+];
+
+const NOISE_PATTERNS = [
+  /no file chosen/i,
+  /chatgpt can make mistakes/i,
+  /check important info/i,
+  /skip to content/i,
+  /chat history/i,
+  /this is a copy of a conversation between/i,
+  /report conversation/i,
+];
 
 export function ImportForm() {
   const router = useRouter();
@@ -52,6 +87,8 @@ export function ImportForm() {
   const [captureUrl, setCaptureUrl] = useState<string>("");
   const [autoStartCapture, setAutoStartCapture] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [manualTranscript, setManualTranscript] = useState("");
+  const [manualTitle, setManualTitle] = useState("");
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -78,6 +115,12 @@ export function ImportForm() {
   useEffect(() => {
     reset();
   }, [reset]);
+
+  useEffect(() => {
+    if (isMobile && !provider) {
+      setProvider("unknown");
+    }
+  }, [isMobile, provider, setProvider]);
 
   const openLinkInNewTab = (href: string) => {
     if (typeof window === "undefined") return;
@@ -148,7 +191,10 @@ export function ImportForm() {
     }
   };
 
-  const handleCapturedTranscript = async (transcript: NormalizedTranscript) => {
+  const handleCapturedTranscript = async (
+    transcript: NormalizedTranscript,
+    importMethod: "automatic" | "manual" = "automatic"
+  ) => {
     setIsCaptureOpen(false);
     setIsSubmitting(true);
     startImport();
@@ -164,7 +210,7 @@ export function ImportForm() {
         title: transcript.title || "Imported Chat",
         provider: transcript.provider,
         sourceUrl: transcript.sourceUrl,
-        importMethod: "automatic",
+        importMethod,
         messages: transcript.messages.map((m) => ({
           role: m.role,
           content: m.content,
@@ -184,102 +230,188 @@ export function ImportForm() {
     } catch (err) {
       console.error("Capture import error:", err);
       importError(err instanceof Error ? err.message : "Failed to create chat");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  const isImporting = status === "importing" || isSubmitting;
+  const handleManualTranscriptImport = async () => {
+    if (!manualTranscript.trim()) {
+      toast.error("Paste the transcript from your AI chat before importing.");
+      return;
+    }
+
+    const manualProvider = provider ?? "unknown";
+
+    try {
+      const transcript = buildManualTranscript({
+        raw: manualTranscript,
+        provider: manualProvider,
+        title: manualTitle,
+      });
+      await handleCapturedTranscript(transcript, "manual");
+      setManualTranscript("");
+      setManualTitle("");
+      setUrl("");
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "We couldn’t parse this transcript. Please ensure it includes clear User:/Assistant: labels.";
+      toast.error(message);
+    }
+  };
+
+  const isProcessing =
+    status === "scanning" || status === "importing" || isSubmitting;
+  const helperText = isMobile
+    ? "Mobile import: copy the full conversation from your AI app and paste it below. Capture Mode isn't available on phones."
+    : "Desktop Capture Mode: paste a shared link and we'll capture the page automatically.";
 
   return (
     <div className="space-y-4">
-      <CaptureModeModal
-        isOpen={isCaptureOpen}
-        url={captureUrl || url}
-        autoStart={autoStartCapture}
-        onAutoStartComplete={() => setAutoStartCapture(false)}
-        onCaptureReady={(href) => {
-          openLinkInNewTab(href);
-        }}
-        onClose={() => {
-          setIsCaptureOpen(false);
-          setAutoStartCapture(false);
-        }}
-        onCaptured={handleCapturedTranscript}
-        model={selectedModel}
-      />
+      {!isMobile && (
+        <CaptureModeModal
+          isOpen={isCaptureOpen}
+          url={captureUrl || url}
+          autoStart={autoStartCapture}
+          onAutoStartComplete={() => setAutoStartCapture(false)}
+          onCaptureReady={(href) => {
+            openLinkInNewTab(href);
+          }}
+          onClose={() => {
+            setIsCaptureOpen(false);
+            setAutoStartCapture(false);
+          }}
+          onCaptured={(transcript) =>
+            handleCapturedTranscript(transcript, "automatic")
+          }
+          model={selectedModel}
+        />
+      )}
 
       {/* Capture Mode */}
       <div className="space-y-4">
         <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
-          <p className="text-xs text-primary">
-            Paste a share link and we&apos;ll guide you through a quick
-            screen-capture → OCR import.
-          </p>
+          <p className="text-xs text-primary">{helperText}</p>
         </div>
-        <div className="relative group/input flex flex-col gap-3 sm:flex-row sm:items-stretch">
-          <div className="relative flex-1 w-full">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <Link2 size={20} />
+        {!isMobile ? (
+          <>
+            <div className="relative group/input flex flex-col gap-3 sm:flex-row sm:items-stretch">
+              <div className="relative flex-1 w-full">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <Link2 size={20} />
+                </div>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pasted = e.clipboardData.getData("text");
+                    if (pasted) {
+                      handleUrlChange(pasted);
+                      const detected = detectProvider(pasted);
+                      if (detected && detected !== "unknown") {
+                        void initiateCapture(pasted, detected);
+                      }
+                    }
+                  }}
+                  placeholder="Paste a shared chat link (T3 Chat / ChatGPT / Claude / Gemini)..."
+                  disabled={isProcessing}
+                  className={cn(
+                    "w-full pl-12 pr-4 py-4 rounded-xl bg-background border text-foreground placeholder:text-muted-foreground placeholder:text-xs focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
+                    provider && provider !== "unknown"
+                      ? "border-primary/50"
+                      : "border-input"
+                  )}
+                />
+                {provider && provider !== "unknown" && (
+                  <div
+                    className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-xs font-medium"
+                    style={{
+                      backgroundColor: `${getProviderColor(provider)}20`,
+                      color: getProviderColor(provider),
+                    }}
+                  >
+                    {getProviderDisplayName(provider)}
+                  </div>
+                )}
+              </div>
+
+              <div className="shrink-0 w-full sm:w-[220px]">
+                <ModelSelectorWrapper
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  disabled={isProcessing}
+                />
+              </div>
             </div>
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => handleUrlChange(e.target.value)}
-              onPaste={(e) => {
-                e.preventDefault();
-                const pasted = e.clipboardData.getData("text");
-                if (pasted) {
-                  handleUrlChange(pasted);
-                  const detected = detectProvider(pasted);
-                  if (detected && detected !== "unknown" && !isMobile) {
-                    void initiateCapture(pasted, detected);
-                  }
-                }
-              }}
-              placeholder="Paste a shared chat link (T3 Chat / ChatGPT / Claude / Gemini)..."
-              disabled={isImporting}
-              className={cn(
-                "w-full pl-12 pr-4 py-4 rounded-xl bg-background border text-foreground placeholder:text-muted-foreground placeholder:text-xs focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all",
-                provider && provider !== "unknown"
-                  ? "border-primary/50"
-                  : "border-input"
-              )}
-            />
-            {provider && provider !== "unknown" && (
-              <div
-                className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-xs font-medium"
-                style={{
-                  backgroundColor: `${getProviderColor(provider)}20`,
-                  color: getProviderColor(provider),
-                }}
-              >
-                {getProviderDisplayName(provider)}
+            {url.trim() && (
+              <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 gap-4">
+                <p className="text-xs text-muted-foreground flex-1">
+                  Paste → Capture. We&apos;ll open the link in a new tab and
+                  record while you scroll.
+                </p>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs font-medium text-primary hover:text-primary/80 shrink-0"
+                >
+                  Open link <ExternalLink size={14} />
+                </a>
               </div>
             )}
-          </div>
-
-          <div className="shrink-0 w-full sm:w-[220px]">
-            <ModelSelectorWrapper
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              disabled={isImporting}
-            />
-          </div>
-        </div>
-        {url.trim() && (
-          <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
-            <p className="text-xs text-muted-foreground">
-              Paste → Capture. We&apos;ll open the link in a new tab and record
-              while you scroll.
-            </p>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-xs font-medium text-primary hover:text-primary/80"
-            >
-              Open link <ExternalLink size={14} />
-            </a>
+          </>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                Conversation provider
+              </label>
+              <select
+                value={provider ?? "unknown"}
+                onChange={(e) => setProvider(e.target.value as Provider)}
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {PROVIDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                Title (optional)
+              </label>
+              <input
+                type="text"
+                value={manualTitle}
+                onChange={(e) => setManualTitle(e.target.value)}
+                placeholder="e.g. Claude brainstorm, Gemini summary..."
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                Transcript
+              </label>
+              <Textarea
+                value={manualTranscript}
+                onChange={(e) => setManualTranscript(e.target.value)}
+                placeholder={
+                  "User: Paste your first message here...\nAssistant: Paste the AI reply...\nUser: ..."
+                }
+                className="min-h-[200px] resize-none"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Paste the entire chat exactly as you see it. Prefix each turn
+                with &quot;User:&quot; or &quot;Assistant:&quot; for best
+                results.
+              </p>
+            </div>
           </div>
         )}
         {error && (
@@ -287,33 +419,55 @@ export function ImportForm() {
             {error}
           </div>
         )}
-        <button
-          onClick={() => {
-            if (!url.trim() || !provider || provider === "unknown") return;
-            void initiateCapture(url.trim());
-          }}
-          disabled={
-            !url.trim() || !provider || provider === "unknown" || isImporting
-          }
-          className={cn(
-            "w-full sm:hidden flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold transition-all",
-            url.trim() && provider && provider !== "unknown" && !isImporting
-              ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-              : "bg-muted text-muted-foreground cursor-not-allowed"
-          )}
-        >
-          {isImporting ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              Creating chat...
-            </>
-          ) : (
-            <>
-              <Video size={18} />
-              Start Capture Mode
-            </>
-          )}
-        </button>
+        {isMobile ? (
+          <button
+            onClick={handleManualTranscriptImport}
+            disabled={isProcessing || !manualTranscript.trim()}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold transition-all",
+              manualTranscript.trim() && !isProcessing
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                : "bg-muted text-muted-foreground cursor-not-allowed"
+            )}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Creating chat...
+              </>
+            ) : (
+              <>Paste Transcript</>
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              if (!url.trim() || !provider || provider === "unknown") return;
+              void initiateCapture(url.trim());
+            }}
+            disabled={
+              !url.trim() || !provider || provider === "unknown" || isProcessing
+            }
+            className={cn(
+              "w-full hidden sm:flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold transition-all",
+              url.trim() && provider && provider !== "unknown" && !isProcessing
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                : "bg-muted text-muted-foreground cursor-not-allowed"
+            )}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Creating chat...
+              </>
+            ) : (
+              <>
+                <Video size={18} />
+                Start Capture Mode
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -390,4 +544,104 @@ function ModelSelectorWrapper({
       </ModelSelectorContent>
     </ModelSelector>
   );
+}
+
+function buildManualTranscript({
+  raw,
+  provider,
+  title,
+}: {
+  raw: string;
+  provider: Provider;
+  title?: string;
+}): NormalizedTranscript {
+  const sanitizedLines = raw
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/\t/g, " ").replace(/\s+$/, ""))
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return true;
+      return !NOISE_PATTERNS.some((pattern) => pattern.test(trimmed));
+    });
+
+  const messages: NormalizedMessage[] = [];
+  let currentRole: NormalizedMessage["role"] = "user";
+  let buffer: string[] = [];
+
+  const flush = () => {
+    const content = buffer.join("\n").trim();
+    if (!content) {
+      buffer = [];
+      return;
+    }
+    messages.push({
+      role: currentRole,
+      content,
+      order: messages.length,
+    });
+    buffer = [];
+  };
+
+  for (const line of sanitizedLines) {
+    const match = line.match(/^([^:：\-]+)\s*[:：\-]\s*(.*)$/i);
+    const maybeRole = match ? mapLabelToRole(match[1]) : null;
+
+    if (match && maybeRole) {
+      flush();
+      currentRole = maybeRole;
+      const remainder = match[2].trim();
+      if (remainder) {
+        buffer.push(remainder);
+      }
+    } else {
+      buffer.push(line);
+    }
+  }
+
+  flush();
+
+  if (!messages.length) {
+    throw new Error(
+      'No messages detected. Please format lines like "User: ..." and "Assistant: ...".'
+    );
+  }
+
+  const generatedTitle = title?.trim() || deriveTitleFromMessages(messages);
+
+  return {
+    provider,
+    title: generatedTitle,
+    messages,
+    sourceUrl: undefined,
+    fetchedAt: Date.now(),
+  };
+}
+
+function mapLabelToRole(label: string): NormalizedMessage["role"] | null {
+  const normalized = label.trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized.includes("system")) return "system";
+  if (USER_LABELS.some((token) => normalized.includes(token))) {
+    return "user";
+  }
+  if (ASSISTANT_LABELS.some((token) => normalized.includes(token))) {
+    return "assistant";
+  }
+  return null;
+}
+
+function deriveTitleFromMessages(messages: NormalizedMessage[]): string {
+  const candidate =
+    messages.find((msg) => msg.role === "user")?.content ||
+    messages[0]?.content ||
+    "";
+
+  if (!candidate) return "Manual Transcript";
+
+  const singleLine = candidate.replace(/\s+/g, " ").trim();
+  if (!singleLine) return "Manual Transcript";
+
+  return singleLine.length > 60 ? `${singleLine.slice(0, 57)}...` : singleLine;
 }

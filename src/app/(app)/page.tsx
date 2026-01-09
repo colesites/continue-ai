@@ -45,7 +45,7 @@ export default function ImportPage() {
                 <p className="text-sm font-medium text-card-foreground">
                   How it works
                 </p>
-                <div className="mt-4 space-y-4">
+                <div className="mt-4 space-y-4 hidden sm:block">
                   <Step
                     icon={<Copy size={16} />}
                     title="Paste share link (Capture Mode)"
@@ -60,6 +60,23 @@ export default function ImportPage() {
                     icon={<Sparkles size={16} />}
                     title="Continue"
                     description="Choose T3 Chat / ChatGPT / Claude / Gemini and keep going."
+                  />
+                </div>
+                <div className="mt-4 space-y-4 sm:hidden">
+                  <Step
+                    icon={<Copy size={16} />}
+                    title="Copy your conversation"
+                    description="Open your AI app and copy the entire chat (User + Assistant turns)."
+                  />
+                  <Step
+                    icon={<ArrowRight size={16} />}
+                    title="Paste transcript below"
+                    description="Pick the provider, add an optional title, and paste every message into the transcript box."
+                  />
+                  <Step
+                    icon={<Sparkles size={16} />}
+                    title="Continue in Continue AI"
+                    description="Import the transcript to keep chatting with your preferred model."
                   />
                 </div>
 
@@ -87,9 +104,12 @@ export default function ImportPage() {
                     <p className="text-sm font-medium text-card-foreground">
                       Import
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Paste transcript for best reliability. Auto-import may be
-                      blocked.
+                    <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
+                      Paste a shared link to auto-import with Capture Mode.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1 sm:hidden">
+                      On mobile, copy your AI conversation and paste it below to
+                      import.
                     </p>
                   </div>
                 </div>
