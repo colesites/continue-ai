@@ -41,6 +41,7 @@ export default function RootLayout({
         <Suspense fallback={<LoadingFallback />}>
           <Providers>{children}</Providers>
         </Suspense>
+        <Toaster richColors theme="dark" />
       </body>
     </html>
   );

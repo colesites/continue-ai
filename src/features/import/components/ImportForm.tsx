@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { Link2, Loader2, ExternalLink, Video, CheckIcon } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/utils/cn";
 import {
   detectProvider,
@@ -50,6 +51,26 @@ export function ImportForm() {
   const [isCaptureOpen, setIsCaptureOpen] = useState(false);
   const [captureUrl, setCaptureUrl] = useState<string>("");
   const [autoStartCapture, setAutoStartCapture] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const query = window.matchMedia("(max-width: 640px)");
+
+    const updateIsMobile = () => {
+      setIsMobile(query.matches);
+    };
+
+    updateIsMobile();
+
+    if (typeof query.addEventListener === "function") {
+      query.addEventListener("change", updateIsMobile);
+      return () => query.removeEventListener("change", updateIsMobile);
+    }
+
+    query.addListener(updateIsMobile);
+    return () => query.removeListener(updateIsMobile);
+  }, []);
 
   const createChat = useMutation(api.chats.createChat);
   const addMessage = useMutation(api.messages.addMessage);
@@ -100,9 +121,12 @@ export function ImportForm() {
       setIsCaptureOpen(true);
     } catch (err) {
       console.error("Failed to initiate capture:", err);
-      // Fallback to manual trigger in modal if stream fails
-      setCaptureUrl(targetUrl);
-      setIsCaptureOpen(true);
+      const message =
+        err instanceof DOMException && err.name === "NotAllowedError"
+          ? "Screen recording permission denied. Please enable screen recording to use Capture Mode."
+          : "We could not start screen capture. Please allow screen recording and try again.";
+
+      toast.error(message);
     }
   };
 
@@ -170,12 +194,12 @@ export function ImportForm() {
       <div className="space-y-4">
         <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
           <p className="text-xs text-primary">
-            Paste a share link and we'll guide you through a quick
+            Paste a share link and we&apos;ll guide you through a quick
             screen-capture → OCR import.
           </p>
         </div>
-        <div className="relative group/input flex items-stretch gap-2">
-          <div className="relative flex-1">
+        <div className="relative group/input flex flex-col gap-3 sm:flex-row sm:items-stretch">
+          <div className="relative flex-1 w-full">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
               <Link2 size={20} />
             </div>
@@ -189,7 +213,7 @@ export function ImportForm() {
                 if (pasted) {
                   handleUrlChange(pasted);
                   const detected = detectProvider(pasted);
-                  if (detected && detected !== "unknown") {
+                  if (detected && detected !== "unknown" && !isMobile) {
                     void initiateCapture(pasted, detected);
                   }
                 }
@@ -216,7 +240,7 @@ export function ImportForm() {
             )}
           </div>
 
-          <div className="shrink-0">
+          <div className="shrink-0 w-full sm:w-[220px]">
             <ModelSelectorWrapper
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
@@ -227,8 +251,8 @@ export function ImportForm() {
         {url.trim() && (
           <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
             <p className="text-xs text-muted-foreground">
-              Paste → Capture. We'll open the link in a new tab and record while
-              you scroll.
+              Paste → Capture. We&apos;ll open the link in a new tab and record
+              while you scroll.
             </p>
             <a
               href={url}
@@ -254,7 +278,7 @@ export function ImportForm() {
             !url.trim() || !provider || provider === "unknown" || isImporting
           }
           className={cn(
-            "w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold transition-all",
+            "w-full sm:hidden flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold transition-all",
             url.trim() && provider && provider !== "unknown" && !isImporting
               ? "bg-primary hover:bg-primary/90 text-primary-foreground"
               : "bg-muted text-muted-foreground cursor-not-allowed"
@@ -305,7 +329,7 @@ function ModelSelectorWrapper({
       <ModelSelectorTrigger asChild>
         <button
           disabled={disabled}
-          className="h-full px-4 rounded-xl border border-input bg-background hover:bg-muted transition-colors flex items-center justify-center gap-2 group min-w-[140px]"
+          className="w-full sm:w-auto min-h-[56px] px-4 rounded-xl border border-input bg-background hover:bg-muted transition-colors flex items-center justify-center gap-2 group min-w-[140px]"
         >
           {selectedModelData && (
             <>
